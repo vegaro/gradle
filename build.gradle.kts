@@ -13,3 +13,5 @@ plugins {
 }
 
 description = "Adaptable, fast automation for all"
+
+println(buildscript.configurations.getByName("classpath").files.joinToString("\n"))
