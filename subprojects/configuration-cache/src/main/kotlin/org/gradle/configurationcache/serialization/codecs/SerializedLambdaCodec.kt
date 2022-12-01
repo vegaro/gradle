@@ -38,6 +38,18 @@ object SerializedLambdaCodec : Codec<SerializedLambda> {
         val signature = value.implMethodSignature
         val paramTypes: Array<Type> = getArgumentTypes(signature)
         paramTypes.forEach { paramType ->
+            // FIXME! DEBUG! Remove this code!
+            if ((0 until value.capturedArgCount).any {
+                    val capturedArg = value.getCapturedArg(it)
+                    capturedArg.javaClass.name.contains("TestSelectionExtension") || capturedArg.javaClass.name.contains("DistributionExtension")
+                }) {
+                println("Hit!")
+                println(value.implClass)
+                println(value.implMethodSignature)
+                println(value.implMethodName)
+                println(trace.toString())
+            }
+
             unsupportedTypes[paramType]?.let { unsupportedKClass ->
                 logUnsupported("serialize", unsupportedKClass)
             }
