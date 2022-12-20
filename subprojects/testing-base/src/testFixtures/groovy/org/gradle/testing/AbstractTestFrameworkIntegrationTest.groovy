@@ -89,13 +89,13 @@ abstract class AbstractTestFrameworkIntegrationTest extends AbstractIntegrationS
 
         buildFile << """
             task verifyTestResultConventions {
-                def junitXmlOutputLocation = ${testTaskName}.reports.junitXml.outputLocation
-                def htmlOutputLocation = ${testTaskName}.reports.html.outputLocation
-                def binaryResultsDirectory = ${testTaskName}.binaryResultsDirectory
+                def junitXmlOutputLocation = provider { ${testTaskName}.reports.junitXml.outputLocation }
+                def htmlOutputLocation = provider { ${testTaskName}.reports.html.outputLocation }
+                def binaryResultsDirectory = provider { ${testTaskName}.binaryResultsDirectory }
                 doLast {
-                    assert junitXmlOutputLocation.asFile.get() == file('build/test-results/${testTaskName}')
-                    assert htmlOutputLocation.asFile.get() == file('build/reports/tests/${testTaskName}')
-                    assert binaryResultsDirectory.asFile.get() == file('build/test-results/${testTaskName}/binary')
+                    assert junitXmlOutputLocation.flatMap { it.asFile }.get() == file('build/test-results/${testTaskName}')
+                    assert htmlOutputLocation.flatMap { it.asFile }.get() == file('build/reports/tests/${testTaskName}')
+                    assert binaryResultsDirectory.flatMap { it.asFile }.get() == file('build/test-results/${testTaskName}/binary')
                 }
             }
         """
