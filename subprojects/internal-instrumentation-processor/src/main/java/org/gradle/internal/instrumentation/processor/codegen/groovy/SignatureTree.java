@@ -73,7 +73,7 @@ class SignatureTree {
             callable.getKind() == CallableKindInfo.STATIC_METHOD || callable.getKind() == AFTER_CONSTRUCTOR
                 ? Stream.of(new ParameterMatchEntry(callable.getOwner(), RECEIVER_AS_CLASS))
                 : Stream.<ParameterMatchEntry>empty(),
-            callable.getKind() == CallableKindInfo.INSTANCE_METHOD ? Stream.of(new ParameterMatchEntry(callable.getParameters().get(0).getParameterType(), RECEIVER)) : Stream.<ParameterMatchEntry>empty(),
+            callable.getKind() == CallableKindInfo.INSTANCE_METHOD || callable.getKind() == CallableKindInfo.GROOVY_PROPERTY ? Stream.of(new ParameterMatchEntry(callable.getParameters().get(0).getParameterType(), RECEIVER)) : Stream.<ParameterMatchEntry>empty(),
             callable.getParameters().stream().filter(it -> it.getKind() == ParameterKindInfo.METHOD_PARAMETER).map(it -> new ParameterMatchEntry(it.getParameterType(), PARAMETER))
         ).flatMap(Function.identity()).collect(Collectors.toList());
     }
