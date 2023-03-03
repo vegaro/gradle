@@ -19,17 +19,13 @@ package org.gradle.internal.classpath;
 import org.codehaus.groovy.runtime.ProcessGroovyMethods;
 import org.codehaus.groovy.runtime.callsite.CallSiteArray;
 import org.codehaus.groovy.vmplugin.v8.IndyInterface;
-import org.gradle.api.Action;
-import org.gradle.api.Transformer;
 import org.gradle.api.file.RelativePath;
-import org.gradle.api.specs.Spec;
 import org.gradle.internal.Pair;
 import org.gradle.internal.classpath.declarations.InterceptorDeclaration;
 import org.gradle.internal.hash.Hasher;
 import org.gradle.internal.instrumentation.api.jvmbytecode.JvmBytecodeCallInterceptor;
 import org.gradle.internal.instrumentation.utils.LocalVariablesSorterWithDroppedVariables;
 import org.gradle.model.internal.asm.MethodVisitorScope;
-import org.gradle.process.CommandLineArgumentProvider;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
@@ -180,13 +176,6 @@ class InstrumentingTransformer implements CachedClasspathTransformer.Transform {
     // ProcessGroovyMethods.execute(List, List, File) -> execute(List, List, File, String)
     private static final String RETURN_PROCESS_FROM_LIST_LIST_FILE = getMethodDescriptor(PROCESS_TYPE, LIST_TYPE, LIST_TYPE, FILE_TYPE);
     private static final String RETURN_PROCESS_FROM_LIST_LIST_FILE_STRING = getMethodDescriptor(PROCESS_TYPE, LIST_TYPE, LIST_TYPE, FILE_TYPE, STRING_TYPE);
-
-    // FileInputStream(File) -> fileOpened(File, String)
-    private static final String RETURN_VOID_FROM_FILE = getMethodDescriptor(Type.VOID_TYPE, FILE_TYPE);
-    private static final String RETURN_VOID_FROM_FILE_STRING = getMethodDescriptor(Type.VOID_TYPE, FILE_TYPE, STRING_TYPE);
-    // FileInputStream(String) -> fileOpened(String, String)
-    private static final String RETURN_VOID_FROM_STRING = getMethodDescriptor(Type.VOID_TYPE, STRING_TYPE);
-    private static final String RETURN_VOID_FROM_STRING_STRING = getMethodDescriptor(Type.VOID_TYPE, STRING_TYPE, STRING_TYPE);
 
     private static final String LAMBDA_METAFACTORY_TYPE = getType(LambdaMetafactory.class).getInternalName();
     private static final String LAMBDA_METAFACTORY_METHOD_DESCRIPTOR = getMethodDescriptor(getType(CallSite.class), getType(MethodHandles.Lookup.class), STRING_TYPE, getType(MethodType.class), getType(Object[].class));
@@ -549,16 +538,6 @@ class InstrumentingTransformer implements CachedClasspathTransformer.Transform {
             return false;
         }
 
-        private Optional<String> getInstrumentedDescriptorForFileInputStreamConstructor(String descriptor) {
-            if (descriptor.equals(RETURN_VOID_FROM_FILE)) {
-                return Optional.of(RETURN_VOID_FROM_FILE_STRING);
-            } else if (descriptor.equals(RETURN_VOID_FROM_STRING)) {
-                return Optional.of(RETURN_VOID_FROM_STRING_STRING);
-            }
-            // It is some signature of FileInputStream.<init> that we don't support.
-            return Optional.empty();
-        }
-
         @Override
         public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle, Object... bootstrapMethodArguments) {
             if (bootstrapMethodHandle.getOwner().equals(LAMBDA_METAFACTORY_TYPE) && bootstrapMethodHandle.getName().equals("metafactory")) {
@@ -574,7 +553,7 @@ class InstrumentingTransformer implements CachedClasspathTransformer.Transform {
                 args.add(LambdaMetafactory.FLAG_SERIALIZABLE);
                 super.visitInvokeDynamicInsn(name, descriptor, altMethod, args.toArray());
                 owner.addSerializedLambda(new LambdaFactoryDetails(name, descriptor, altMethod, args));
-            } else if (isGroovyIndyCallsite(descriptor, bootstrapMethodHandle)) {
+            } else if (isGroovyIndyCallsite(bootstrapMethodHandle)) {
                 Handle interceptor = new Handle(
                     H_INVOKESTATIC,
                     INSTRUMENTED_TYPE.getInternalName(),
@@ -588,28 +567,16 @@ class InstrumentingTransformer implements CachedClasspathTransformer.Transform {
             }
         }
 
-        private boolean isGradleLambdaDescriptor(String descriptor) {
-            return descriptor.endsWith(ACTION_LAMBDA_SUFFIX)
-                || descriptor.endsWith(SPEC_LAMBDA_SUFFIX)
-                || descriptor.endsWith(TRANSFORMER_LAMBDA_SUFFIX)
-                || descriptor.endsWith(COMMAND_LINE_ARGUMENT_PROVIDER_LAMBDA_SUFFIX);
-        }
-
         private String binaryClassNameOf(String className) {
             return getObjectType(className).getClassName();
         }
 
-        private boolean isGroovyIndyCallsite(String descriptor, Handle bootstrapMethodHandle) {
+        private boolean isGroovyIndyCallsite(Handle bootstrapMethodHandle) {
             return (bootstrapMethodHandle.getOwner().equals(GROOVY_INDY_INTERFACE_TYPE) ||
                 bootstrapMethodHandle.getOwner().equals(GROOVY_INDY_INTERFACE_V7_TYPE)) &&
                 bootstrapMethodHandle.getName().equals("bootstrap") &&
                 bootstrapMethodHandle.getDesc().equals(GROOVY_INDY_INTERFACE_BOOTSTRAP_METHOD_DESCRIPTOR);
         }
-
-        private static final String ACTION_LAMBDA_SUFFIX = ")" + getType(Action.class).getDescriptor();
-        private static final String SPEC_LAMBDA_SUFFIX = ")" + getType(Spec.class).getDescriptor();
-        private static final String TRANSFORMER_LAMBDA_SUFFIX = ")" + getType(Transformer.class).getDescriptor();
-        private static final String COMMAND_LINE_ARGUMENT_PROVIDER_LAMBDA_SUFFIX = ")" + getType(CommandLineArgumentProvider.class).getDescriptor();
     }
 
     private static class LambdaFactoryDetails {
