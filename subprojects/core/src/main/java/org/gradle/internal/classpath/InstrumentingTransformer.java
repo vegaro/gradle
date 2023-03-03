@@ -564,18 +564,6 @@ class InstrumentingTransformer implements CachedClasspathTransformer.Transform {
         }
 
         private boolean visitINVOKESPECIAL(String owner, String name, String descriptor) {
-//            if (owner.equals(FILE_INPUT_STREAM_TYPE.getInternalName()) && name.equals("<init>")) {
-//                Optional<String> instrumentedDescriptor = getInstrumentedDescriptorForFileInputStreamConstructor(descriptor);
-//                if (instrumentedDescriptor.isPresent()) {
-//                    // We are still calling the original constructor instead of replacing it with an instrumented method. The instrumented method is merely a notifier
-//                    // there.
-//                    _DUP();
-//                    _LDC(binaryClassNameOf(className));
-//                    _INVOKESTATIC(INSTRUMENTED_TYPE, "fileOpened", instrumentedDescriptor.get());
-//                    _INVOKESPECIAL(owner, name, descriptor);
-//                    return true;
-//                }
-//            }
             return false;
         }
 
