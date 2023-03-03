@@ -35,7 +35,6 @@ import org.gradle.internal.lazy.Lazy;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
@@ -962,33 +961,6 @@ public class Instrumented {
                 return startPipeline((List<ProcessBuilder>) invocation.getArgument(0), consumer);
             }
             return invocation.callOriginal();
-        }
-    }
-
-    /**
-     * The interceptor for {@link FileInputStream#FileInputStream(File)} and {@link FileInputStream#FileInputStream(String)}.
-     */
-    private static class FileInputStreamConstructorInterceptor extends CallInterceptor {
-        public FileInputStreamConstructorInterceptor() {
-            super(InterceptScope.constructorsOf(FileInputStream.class));
-        }
-
-        @Override
-        protected Object doIntercept(Invocation invocation, String consumer) throws Throwable {
-            if (invocation.getArgsCount() == 1) {
-                Object argument = invocation.getArgument(0);
-                if (argument instanceof CharSequence) {
-                    String path = convertToString(argument);
-                    fileOpened(path, consumer);
-                    return new FileInputStream(path);
-                } else if (argument instanceof File) {
-                    File file = (File) argument;
-                    fileOpened(file, consumer);
-                    return new FileInputStream(file);
-                }
-            }
-            return invocation.callOriginal();
-
         }
     }
 }
