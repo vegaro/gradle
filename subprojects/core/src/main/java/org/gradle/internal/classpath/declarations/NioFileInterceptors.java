@@ -298,7 +298,7 @@ public class NioFileInterceptors {
         @CallerClassName String consumer
     ) throws IOException {
         if (optionsAllowReading(options)) {
-            tryReportFileOpened(path,consumer);
+            tryReportFileOpened(path, consumer);
         }
         return self.newInputStream(path, options);
     }
