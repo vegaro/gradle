@@ -100,6 +100,49 @@ intended for internal use and was never intended to be used as part of the publi
 
 Starting in Gradle 9.0, this method will be removed without replacement.
 
+[[test_task_default_classpath]]
+==== Relying on conventions for custom Test tasks
+
+By default, when applying the link:java_plugin.html[`java`] plugin, the `testClassesDirs`
+and `classpath` of all `Test` tasks have the same convention. Unless otherwise changed,
+the default behavior is to execute the tests from the default `test` link:jvm_test_suite_plugin.html[`TestSuite`]
+by configuring the task with the `classpath` and `testClassesDirs` from the `test` suite.
+This behavior will be removed in Gradle 9.0.
+
+While this existing default behavior is correct for the use case of executing the default unit
+test suite under a different environment, it does not support the use case of executing
+an entirely separate set of tests.
+
+If you wish to continue including these tests, use the following code to avoid the deprecation warning in 8.1
+and prepare for the behavior change in 9.0. Alternatively, consider migrating to test suites.
+
+====
+[.multi-language-sample]
+=====
+.build.gradle.kts
+[source,kotlin]
+----
+val test by testing.suites.existing(JvmTestSuite::class)
+tasks.named<Test>("myTestTask") {
+    testClassesDirs = files(test.map { it.sources.output.classesDirs })
+    classpath = files(test.map { it.sources.runtimeClasspath })
+}
+----
+=====
+[.multi-language-sample]
+=====
+.build.gradle
+[source,groovy]
+----
+tasks.myTestTask {
+    testClassesDirs = testing.suites.test.sources.output.classesDirs
+    classpath = testing.suites.test.sources.runtimeClasspath
+}
+----
+=====
+====
+
+
 [[gmm_modification_after_publication_populated]]
 ==== Modifying Gradle Module Metadata after a publication has been populated
 
@@ -202,7 +245,7 @@ Please only use `versions` or `plugins` from dependency version catalogs in the 
 [[validate_plugins_without_java_toolchain]]
 ==== Using `ValidatePlugins` task without a Java Toolchain
 
-Using a task of type link:{javadocPath}/org/gradle/plugin/devel/tasks/ValidatePlugins.html[ValidatePlugins] without applying the link:https://docs.gradle.org/current/userguide/toolchains.html[Java Toolchains] plugin is deprecated, and will become an error in Gradle 9.0.
+Using a task of type link:{javadocPath}/org/gradle/plugin/devel/tasks/ValidatePlugins.html[ValidatePlugins] without applying the link:toolchains.html[Java Toolchains] plugin is deprecated, and will become an error in Gradle 9.0.
 
 To avoid this warning, please apply the plugin to your project:
 
@@ -229,7 +272,7 @@ plugins {
 =====
 ====
 
-The Java Toolchains plugin is applied automatically by the link:https://docs.gradle.org/current/userguide/java_plugin.html[Java plugin],
+The Java Toolchains plugin is applied automatically by the link:java_plugin.html[Java plugin],
 so you can also apply it to your project and it will fix the warning.
 
 [[org_gradle_util_reports_deprecations]]
@@ -271,7 +314,7 @@ Please use standard locations for settings and build files:
 [[disabling_user_home_cache_cleanup]]
 ==== Deprecated org.gradle.cache.cleanup property
 
-The `org.gradle.cache.cleanup` property in `gradle.properties` under Gradle user home has been deprecated.  Please use the link:https://docs.gradle.org/current/userguide/directory_layout.html#dir:gradle_user_home:configure_cache_cleanup[cache cleanup DSL] instead to disable or modify the cleanup configuration.
+The `org.gradle.cache.cleanup` property in `gradle.properties` under Gradle user home has been deprecated.  Please use the <<directory_layout#dir:gradle_user_home:configure_cache_cleanup,cache cleanup DSL>> instead to disable or modify the cleanup configuration.
 
 Since the `org.gradle.cache.cleanup` property may still be needed for older versions of Gradle, this property may still be present and no deprecation warnings will be printed as long as it is also configured via the DSL.
 The DSL value will always take preference over the `org.gradle.cache.cleanup` property.
@@ -324,6 +367,11 @@ beforeSettings {
 ----
 =====
 ====
+
+[no_relative_paths_for_java_executables]
+==== Deprecated using relative paths to specify Java executables
+Using relative file paths to point to Java executables is now deprecated and will become an error in Gradle 9.
+This is done to reduce confusion about what such relative paths should resolve against.
 
 === Changes in the IDE integration
 
