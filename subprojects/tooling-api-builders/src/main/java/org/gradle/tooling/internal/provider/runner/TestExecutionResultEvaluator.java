@@ -64,7 +64,21 @@ class TestExecutionResultEvaluator implements BuildOperationListener {
     }
 
     public boolean hasUnmatchedTests() {
-        return resultCount.get() == 0;
+        if (noTestsSelected()) {
+             return false;
+        } else {
+            return resultCount.get() == 0;
+        }
+    }
+
+    private boolean noTestsSelected() {
+        return internalTestExecutionRequest.getTestExecutionDescriptors().isEmpty()
+            && internalTestExecutionRequest.getInternalJvmTestRequests().isEmpty()
+            && internalTestExecutionRequest.getTaskSpecs()
+                .stream()
+                .filter(InternalTestSpec.class::isInstance)
+                .map(InternalTestSpec.class::cast)
+                .noneMatch(spec -> !spec.getClasses().isEmpty() || !spec.getMethods().isEmpty() || !spec.getPackages().isEmpty() || !spec.getPatterns().isEmpty());
     }
 
     public boolean hasFailedTests() {
