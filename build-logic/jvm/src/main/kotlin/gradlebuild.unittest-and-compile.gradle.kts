@@ -36,6 +36,7 @@ import gradlebuild.basics.testing.includeSpockAnnotation
 import gradlebuild.filterEnvironmentVariables
 import gradlebuild.jvm.argumentproviders.CiEnvironmentProvider
 import gradlebuild.jvm.extension.UnitTestAndCompileExtension
+import org.gradle.api.internal.artifacts.configurations.ConfigurationInternal
 import org.gradle.internal.os.OperatingSystem
 import java.time.Duration
 import java.util.jar.Attributes
@@ -122,7 +123,14 @@ fun configureClasspathManifestGeneration() {
     val runtimeClasspath by configurations
     val classpathManifest = tasks.register("classpathManifest", ClasspathManifest::class) {
         this.runtimeClasspath.from(runtimeClasspath)
-        this.externalDependencies.from(runtimeClasspath.fileCollection { it is ExternalDependency })
+        // TODO: We call preventFromFurtherMutation() to execute beforeLocking to work around
+        // artifactView attributes bug.
+        (runtimeClasspath as ConfigurationInternal).preventFromFurtherMutation()
+        this.externalDependencies.from(runtimeClasspath.incoming.artifactView {
+            componentFilter {
+                it is ModuleComponentIdentifier
+            }
+        }.files)
         this.manifestFile = moduleIdentity.baseName.map { layout.buildDirectory.file("generated-resources/$it-classpath/$it-classpath.properties").get() }
     }
     sourceSets.main.get().output.dir(classpathManifest.map { it.manifestFile.get().asFile.parentFile })
