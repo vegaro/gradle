@@ -20,6 +20,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
+import org.gradle.internal.deprecation.DeprecationLogger
 
 class GenerateGraphTask extends AbstractGenerateGraphTask {
     @Internal
@@ -60,11 +61,13 @@ class GenerateGraphTask extends AbstractGenerateGraphTask {
                 configuration.incoming.artifacts.artifacts.each {
                     writer.println("file-artifact-incoming:${it.file.name}")
                 }
-                configuration.files { true }.each {
-                    writer.println("file-filtered:${it.name}")
-                }
-                configuration.fileCollection { true }.each {
-                    writer.println("file-collection-filtered:${it.name}")
+                DeprecationLogger.whileDisabled {
+                    configuration.files { true }.each {
+                        writer.println("file-filtered:${it.name}")
+                    }
+                    configuration.fileCollection { true }.each {
+                        writer.println("file-collection-filtered:${it.name}")
+                    }
                 }
                 configuration.resolvedConfiguration.files.each {
                     writer.println("file-resolved-config:${it.name}")
