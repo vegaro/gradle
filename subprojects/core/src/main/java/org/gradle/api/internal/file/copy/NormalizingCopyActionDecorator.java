@@ -25,7 +25,6 @@ import org.gradle.api.file.ContentFilterable;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FilePermissions;
-import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
@@ -36,6 +35,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FilterReader;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -99,7 +99,7 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         FileCopyDetailsInternal dir;
         if (detailsForPath.isEmpty()) {
             // TODO - this is pretty nasty, look at avoiding using a time bomb stub here
-            dir = new StubbedFileCopyDetails(path, includeEmptyDirs, chmod);
+            dir = new StubbedFileCopyDetails(path, includeEmptyDirs);
         } else {
             dir = detailsForPath.get(0);
         }
@@ -109,10 +109,9 @@ public class NormalizingCopyActionDecorator implements CopyAction {
     private static class StubbedFileCopyDetails extends AbstractFileTreeElement implements FileCopyDetailsInternal {
         private final RelativePath path;
         private final boolean includeEmptyDirs;
-        private long lastModified = System.currentTimeMillis();
+        private final long lastModified = System.currentTimeMillis();
 
-        private StubbedFileCopyDetails(RelativePath path, boolean includeEmptyDirs, Chmod chmod) {
-            super(chmod);
+        private StubbedFileCopyDetails(RelativePath path, boolean includeEmptyDirs) {
             this.path = path;
             this.includeEmptyDirs = includeEmptyDirs;
         }
@@ -129,6 +128,12 @@ public class NormalizingCopyActionDecorator implements CopyAction {
 
         @Override
         public File getFile() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public InputStream open() {
             throw new UnsupportedOperationException();
         }
 
@@ -154,11 +159,6 @@ public class NormalizingCopyActionDecorator implements CopyAction {
 
         @Override
         public long getSize() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public InputStream open() {
             throw new UnsupportedOperationException();
         }
 
@@ -233,7 +233,13 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         }
 
         @Override
-        public LinksStrategy getPreserveLinks() {
+        public void copyTo(OutputStream output) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        @SuppressWarnings("deprecation") //TODO: remove when the deprecated method is removed
+        public boolean copyTo(File target) {
             throw new UnsupportedOperationException();
         }
 

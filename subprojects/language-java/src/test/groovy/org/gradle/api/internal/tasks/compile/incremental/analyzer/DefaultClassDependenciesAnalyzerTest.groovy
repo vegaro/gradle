@@ -46,7 +46,7 @@ class DefaultClassDependenciesAnalyzerTest extends Specification {
     analyzer = new DefaultClassDependenciesAnalyzer(new StringInterner())
 
     private ClassAnalysis analyze(Class foo) {
-        analyzer.getClassAnalysis(classStream(foo))
+        analyzer.getClassAnalysis(classStream(foo).getBytes())
     }
 
     def "knows the name of a class"() {

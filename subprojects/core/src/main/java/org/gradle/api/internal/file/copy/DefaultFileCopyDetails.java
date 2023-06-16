@@ -18,6 +18,7 @@ package org.gradle.api.internal.file.copy;
 
 import groovy.lang.Closure;
 import org.gradle.api.Action;
+import org.gradle.api.GradleException;
 import org.gradle.api.Transformer;
 import org.gradle.api.file.ConfigurableFilePermissions;
 import org.gradle.api.file.ContentFilterable;
@@ -25,21 +26,26 @@ import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileVisitDetails;
-import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.DefaultConfigurableFilePermissions;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.internal.Actions;
+import org.gradle.internal.exceptions.Contextual;
 import org.gradle.internal.file.Chmod;
+import org.gradle.util.internal.GFileUtils;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FilterReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
 
 public class DefaultFileCopyDetails extends AbstractFileTreeElement implements FileVisitDetails, FileCopyDetailsInternal {
@@ -53,28 +59,22 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
 
     private DefaultConfigurableFilePermissions permissions;
     private DuplicatesStrategy duplicatesStrategy;
-    private LinksStrategy preserveLinks;
+    private Chmod chmod;
 
     @Inject
     public DefaultFileCopyDetails(FileVisitDetails fileDetails, CopySpecResolver specResolver, ObjectFactory objectFactory, Chmod chmod) {
-        super(chmod);
         this.filterChain = new FilterChain(specResolver.getFilteringCharset());
         this.fileDetails = fileDetails;
         this.specResolver = specResolver;
         this.objectFactory = objectFactory;
         this.duplicatesStrategy = specResolver.getDuplicatesStrategy();
         this.defaultDuplicatesStrategy = specResolver.isDefaultDuplicateStrategy();
-        this.preserveLinks = specResolver.getPreserveLinks();
+        this.chmod = chmod;
     }
 
     @Override
     public boolean isIncludeEmptyDirs() {
         return specResolver.getIncludeEmptyDirs();
-    }
-
-    @Override
-    public String getDisplayName() {
-        return fileDetails.toString();
     }
 
     @Override
@@ -89,6 +89,17 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
         } else {
             return fileDetails.getFile();
         }
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public InputStream open() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void copyTo(OutputStream output) {
+        fileDetails.copyTo(output);
     }
 
     @Override
@@ -123,42 +134,48 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
     }
 
     @Override
-    public InputStream open() {
-        if (filterChain.hasFilters()) {
-            return filterChain.transform(fileDetails.open());
-        } else {
-            return fileDetails.open();
-        }
+    public String getDisplayName() {
+        return fileDetails.toString();
     }
 
     @Override
-    public void copyTo(OutputStream output) {
-        if (filterChain.hasFilters()) {
-            super.copyTo(output);
-        } else {
-            fileDetails.copyTo(output);
-        }
-    }
-
-    @Override
+    @SuppressWarnings("deprecation") //TODO: remove suppression after method is removed from the interface
     public boolean copyTo(File target) {
-        if (filterChain.hasFilters()) {
-            return super.copyTo(target);
-        } else {
-            final boolean copied;
-            if (preserveLinks.shouldBePreserved(getFile().toPath())) { //TODO: fix for zip
-                copied = fileDetails.copySymlinkTo(target); //TODO: permissions?
+        validateTimeStamps();
+        try {
+            if (isSymbolicLink()) {
+                copySymlinkTo(target); //TODO: permissions?
+            } else if (isDirectory()) {
+                GFileUtils.mkdirs(target);
+                adaptPermissions(target);
             } else {
-                copied = fileDetails.copyTo(target);
+                GFileUtils.mkdirs(target.getParentFile());
+                copyFile(target);
                 adaptPermissions(target);
             }
-            return copied;
+            return true;
+        } catch (Exception e) {
+            throw new CopyFileElementException(String.format("Could not copy %s to '%s'.", getName(), target), e);
+        }
+    }
+
+    private void copyFile(File target) throws IOException {
+        try (FileOutputStream outputStream = new FileOutputStream(target)) {
+            copyTo(outputStream);
+        }
+    }
+
+    private void copySymlinkTo(File target) {
+        try {
+            Files.copy(getFile().toPath(), target.toPath(), StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING, LinkOption.NOFOLLOW_LINKS);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     private void adaptPermissions(File target) {
         int specMode = getImmutablePermissions().toUnixNumeric();
-        getChmod().chmod(target, specMode);
+        chmod.chmod(target, specMode);
     }
 
     @Override
@@ -301,11 +318,6 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
         return this.fileDetails.getRelativePath();
     }
 
-    @Override
-    public LinksStrategy getPreserveLinks() { //TODO: save the result of preserving strategy check
-        return preserveLinks;
-    }
-
     private static class ByteCountingOutputStream extends OutputStream {
         long size;
 
@@ -322,6 +334,20 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
         @Override
         public void write(byte[] b, int off, int len) throws IOException {
             size += len;
+        }
+    }
+
+    protected void validateTimeStamps() {
+        final long lastModified = getLastModified();
+        if (lastModified < 0) {
+            throw new GradleException(String.format("Invalid Timestamp %s for '%s'.", lastModified, getName()));
+        }
+    }
+
+    @Contextual
+    private static class CopyFileElementException extends GradleException {
+        CopyFileElementException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

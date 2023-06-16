@@ -92,6 +92,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         fileTree.visit(visitor)
 
         then:
+        1 * visitor.getLinksStrategy()
         1 * visitor.visitDir(_) >> { FileVisitDetails details ->
             with(details) {
                 file == expectedDir
@@ -104,6 +105,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         }
 
         then:
+        1 * visitor.getLinksStrategy()
         1 * visitor.visitFile(_) >> { FileVisitDetails details ->
             with(details) {
                 file == expectedFile
@@ -128,6 +130,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         then:
         1 * visitor.visitDir({ it.file == tempDir.file("dir2") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/file2") })
+        2 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -140,6 +143,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         then:
         1 * visitor.visitDir({ it.file == tempDir.file("dir2") })
         1 * visitor.visitDir({ it.file == tempDir.file("dir2/dir2") })
+        2 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -150,6 +154,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         fileTree.visit(visitor)
 
         then:
+        1 * visitor.getLinksStrategy()
         1 * visitor.visitDir({ it.file == tempDir.file("dir2") })
 
         then:
@@ -169,6 +174,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitDir({ it.file == tempDir.file("dir2") })
         1 * visitor.visitDir({ it.file == tempDir.file("dir2/dir1") })
         1 * visitor.visitDir({ it.file == tempDir.file("dir2/dir2") })
+        6 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -188,6 +194,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file2") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file3") })
+        2 * visitor.getLinksStrategy()
         0 * _
 
         where:
@@ -210,6 +217,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir3/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file1") })
+        1 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -225,6 +233,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitDir({ it.file == tempDir.file("dir2/dir2") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file1") })
+        2 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -252,6 +261,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file2") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/dir1/file3") })
+        1 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -268,6 +278,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitFile({ it.file == tempDir.file("dir1/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir3/file1") })
+        6 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -284,6 +295,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitFile({ it.file == tempDir.file("dir1/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir3/file1") })
+        6 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -310,6 +322,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitDir({ it.file == tempDir.file("dir3") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir1/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir3/file1") })
+        6 * visitor.getLinksStrategy()
         0 * _
     }
 
@@ -326,6 +339,7 @@ class SingleIncludePatternFileTreeSpec extends Specification {
         1 * visitor.visitFile({ it.file == tempDir.file("dir1/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir2/file1") })
         1 * visitor.visitFile({ it.file == tempDir.file("dir3/file1") })
+        6 * visitor.getLinksStrategy()
         0 * _
     }
 

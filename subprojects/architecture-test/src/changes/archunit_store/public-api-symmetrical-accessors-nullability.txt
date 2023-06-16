@@ -5,8 +5,10 @@ Accessors for org.gradle.api.tasks.AbstractCopyTask.dirMode don't use symmetrica
 Accessors for org.gradle.api.tasks.AbstractCopyTask.fileMode don't use symmetrical @Nullable
 Accessors for org.gradle.api.tasks.AbstractExecTask.args don't use symmetrical @Nullable
 Accessors for org.gradle.api.tasks.AbstractExecTask.executable don't use symmetrical @Nullable
+Accessors for org.gradle.api.tasks.Copy.destinationDir don't use symmetrical @Nullable
 Accessors for org.gradle.api.tasks.JavaExec.executable don't use symmetrical @Nullable
 Accessors for org.gradle.api.tasks.SourceSetOutput.resourcesDir don't use symmetrical @Nullable
+Accessors for org.gradle.api.tasks.Sync.destinationDir don't use symmetrical @Nullable
 Accessors for org.gradle.api.tasks.bundling.War.classpath don't use symmetrical @Nullable
 Accessors for org.gradle.api.tasks.bundling.Zip.metadataCharset don't use symmetrical @Nullable
 Accessors for org.gradle.api.tasks.compile.CompileOptions.annotationProcessorGeneratedSourcesDirectory don't use symmetrical @Nullable

@@ -18,6 +18,7 @@ package org.gradle.api.file;
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
 import org.gradle.api.Action;
+import org.gradle.api.Incubating;
 import org.gradle.api.Transformer;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternFilterable;
@@ -257,7 +258,7 @@ public interface CopySpec extends CopySourceSpec, CopyProcessingSpec, PatternFil
      * @see org.gradle.api.tasks.util.PatternFilterable Pattern Format
      */
     @Override
-    CopySpec include(Spec<FileTreeElement> includeSpec);
+    CopySpec include(Spec<ReadOnlyFileTreeElement> includeSpec);
 
     /**
      * {@inheritDoc}
@@ -289,7 +290,7 @@ public interface CopySpec extends CopySourceSpec, CopyProcessingSpec, PatternFil
      * @see org.gradle.api.tasks.util.PatternFilterable Pattern Format
      */
     @Override
-    CopySpec exclude(Spec<FileTreeElement> excludeSpec);
+    CopySpec exclude(Spec<ReadOnlyFileTreeElement> excludeSpec);
 
     /**
      * {@inheritDoc}
@@ -424,6 +425,7 @@ public interface CopySpec extends CopySourceSpec, CopyProcessingSpec, PatternFil
      * @since 8.3
      */
     @Nullable
+    @Incubating
     LinksStrategy getPreserveLinks();
 
     /**
@@ -432,5 +434,6 @@ public interface CopySpec extends CopySourceSpec, CopyProcessingSpec, PatternFil
      * @param preserveLinks <code>true</code> if symbolic links should be copied as links
      * @since 8.3
      */
+    @Incubating
     void setPreserveLinks(@Nullable LinksStrategy preserveLinks);
 }

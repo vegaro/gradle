@@ -7,6 +7,14 @@
             "changes": [
                 "org.gradle.internal.deprecation.DeprecationLogger.init(org.gradle.internal.featurelifecycle.UsageLocationReporter,org.gradle.api.logging.configuration.WarningMode,org.gradle.internal.operations.BuildOperationProgressEventEmitter)"
             ]
+        },
+        {
+            "type": "org.gradle.api.file.RelativePath",
+            "member": "Method org.gradle.api.file.RelativePath.getParent()",
+            "acceptation": "The method can actually return null",
+            "changes": [
+                "From non-null returning to null returning breaking change"
+            ]
         }
     ]
 }

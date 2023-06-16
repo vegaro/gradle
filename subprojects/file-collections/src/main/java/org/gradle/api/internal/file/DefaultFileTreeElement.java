@@ -18,23 +18,19 @@ package org.gradle.api.internal.file;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.RelativePath;
-import org.gradle.internal.file.Chmod;
 import org.gradle.internal.file.Stat;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
-import org.gradle.util.internal.GFileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 
 public class DefaultFileTreeElement extends AbstractFileTreeElement {
-    private final File file;
+    protected final File file;
     private final RelativePath relativePath;
     private final Stat stat;
 
-    public DefaultFileTreeElement(File file, RelativePath relativePath, Chmod chmod, Stat stat) {
-        super(chmod);
+    public DefaultFileTreeElement(File file, RelativePath relativePath, Stat stat) {
         this.file = file;
         this.relativePath = relativePath;
         this.stat = stat;
@@ -42,12 +38,7 @@ public class DefaultFileTreeElement extends AbstractFileTreeElement {
 
     public static DefaultFileTreeElement of(File file, FileSystem fileSystem) {
         RelativePath path = RelativePath.parse(!file.isDirectory(), file.getAbsolutePath());
-        return new DefaultFileTreeElement(file, path, fileSystem, fileSystem);
-    }
-
-    @Override
-    public File getFile() {
-        return file;
+        return new DefaultFileTreeElement(file, path, fileSystem);
     }
 
     @Override
@@ -82,11 +73,6 @@ public class DefaultFileTreeElement extends AbstractFileTreeElement {
         } catch (IOException e) {
             throw new GradleException(String.format("Couldn't read symbolic link '%s'.", file.toPath()), e);
         }
-    }
-
-    @Override
-    public InputStream open() {
-        return GFileUtils.openInputStream(file);
     }
 
     @Override

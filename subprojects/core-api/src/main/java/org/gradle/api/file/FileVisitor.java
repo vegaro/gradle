@@ -15,6 +15,8 @@
  */
 package org.gradle.api.file;
 
+import org.gradle.api.Incubating;
+
 import javax.annotation.Nullable;
 
 /**
@@ -35,7 +37,13 @@ public interface FileVisitor {
      */
     void visitFile(FileVisitDetails fileDetails);
 
+    /**
+     * Get strategy for handling symbolic links.
+     *
+     * @since 8.3
+     */
     @Nullable
+    @Incubating
     default LinksStrategy getLinksStrategy() {
         return LinksStrategy.NONE;
     }

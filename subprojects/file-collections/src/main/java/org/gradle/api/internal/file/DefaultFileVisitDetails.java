@@ -16,28 +16,50 @@
 
 package org.gradle.api.internal.file;
 
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.RelativePath;
-import org.gradle.internal.file.Chmod;
 import org.gradle.internal.file.Stat;
+import org.gradle.util.internal.GFileUtils;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DefaultFileVisitDetails extends DefaultFileTreeElement implements FileVisitDetails {
     private final AtomicBoolean stop;
+    private final boolean preserveLink;
 
-    public DefaultFileVisitDetails(File file, RelativePath relativePath, AtomicBoolean stop, Chmod chmod, Stat stat) {
-        super(file, relativePath, chmod, stat);
+    public DefaultFileVisitDetails(File file, RelativePath relativePath, AtomicBoolean stop, Stat stat, boolean preserveLink) {
+        super(file, relativePath, stat);
         this.stop = stop;
+        this.preserveLink = preserveLink;
     }
 
-    public DefaultFileVisitDetails(File file, Chmod chmod, Stat stat) {
-        this(file, new RelativePath(!file.isDirectory(), file.getName()), new AtomicBoolean(), chmod, stat);
+    @Override
+    public File getFile() {
+        return super.file;
+    }
+
+    @Override
+    public void copyTo(OutputStream output) {
+        try (InputStream inputStream = GFileUtils.openInputStream(file)) {
+            IOUtils.copyLarge(inputStream, output);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
     public void stopVisiting() {
         stop.set(true);
+    }
+
+    @Override
+    public boolean isSymbolicLink() {
+        return preserveLink && super.isSymbolicLink();
     }
 }

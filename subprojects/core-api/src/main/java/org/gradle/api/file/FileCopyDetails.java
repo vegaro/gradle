@@ -20,6 +20,8 @@ import org.gradle.api.Incubating;
 import org.gradle.api.NonExtensible;
 import org.gradle.internal.HasInternalProtocol;
 
+import java.io.File;
+
 /**
  * <p>Provides details about a file or directory about to be copied, and allows some aspects of the destination file to
  * be modified.</p>
@@ -154,5 +156,15 @@ public interface FileCopyDetails extends FileTreeElement, ContentFilterable {
      */
     RelativePath getRelativeSourcePath();
 
-    LinksStrategy getPreserveLinks();
+    /**
+     * Copies this file to the given target file. Does not copy the file if the target is already a copy of this file.
+     *
+     * @param target the target file.
+     * @return true if this file was copied, false if it was up-to-date
+     * @since 8.3
+     */
+    @Incubating
+    @SuppressWarnings("deprecation")
+    //TODO: remove deprecation after FileTreeElement.copyTo(File) is removed
+    boolean copyTo(File target);
 }

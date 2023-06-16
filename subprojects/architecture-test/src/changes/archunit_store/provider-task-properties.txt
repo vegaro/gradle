@@ -55,6 +55,7 @@ Method <org.gradle.api.tasks.AbstractCopyTask.getFileMode()> does not have raw r
 Method <org.gradle.api.tasks.AbstractCopyTask.getFilteringCharset()> does not have raw return type assignable to org.gradle.api.provider.Property in (AbstractCopyTask.java:0)
 Method <org.gradle.api.tasks.AbstractCopyTask.getIncludeEmptyDirs()> does not have raw return type assignable to org.gradle.api.provider.Property in (AbstractCopyTask.java:0)
 Method <org.gradle.api.tasks.AbstractCopyTask.getIncludes()> does not have raw return type assignable to org.gradle.api.provider.Property in (AbstractCopyTask.java:0)
+Method <org.gradle.api.tasks.AbstractCopyTask.getPreserveLinks()> does not have raw return type assignable to org.gradle.api.provider.Property in (AbstractCopyTask.java:0)
 Method <org.gradle.api.tasks.AbstractCopyTask.getRootSpec()> does not have raw return type assignable to org.gradle.api.provider.Provider in (AbstractCopyTask.java:0)
 Method <org.gradle.api.tasks.AbstractCopyTask.isCaseSensitive()> does not have raw return type assignable to org.gradle.api.provider.Property in (AbstractCopyTask.java:0)
 Method <org.gradle.api.tasks.AbstractExecTask.getArgs()> does not have raw return type assignable to org.gradle.api.provider.Property in (AbstractExecTask.java:0)

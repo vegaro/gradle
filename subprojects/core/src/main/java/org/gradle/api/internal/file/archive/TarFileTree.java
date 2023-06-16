@@ -111,9 +111,9 @@ public class TarFileTree extends AbstractArchiveFileTree {
         TarArchiveEntry entry;
         while (!stopFlag.get() && (entry = (TarArchiveEntry) tar.getNextEntry()) != null) {
             if (entry.isDirectory()) {
-                visitor.visitDir(new DetailsImpl(resource, expandedDir, entry, tar, stopFlag, chmod));
+                visitor.visitDir(new DetailsImpl(resource, expandedDir, entry, tar, stopFlag));
             } else {
-                visitor.visitFile(new DetailsImpl(resource, expandedDir, entry, tar, stopFlag, chmod));
+                visitor.visitFile(new DetailsImpl(resource, expandedDir, entry, tar, stopFlag));
             }
         }
     }
@@ -187,8 +187,8 @@ public class TarFileTree extends AbstractArchiveFileTree {
         private final ReadableResourceInternal resource;
         private boolean read;
 
-        public DetailsImpl(ReadableResourceInternal resource, File expandedDir, TarArchiveEntry entry, NoCloseTarArchiveInputStream tar, AtomicBoolean stopFlag, Chmod chmod) {
-            super(chmod, expandedDir, stopFlag);
+        public DetailsImpl(ReadableResourceInternal resource, File expandedDir, TarArchiveEntry entry, NoCloseTarArchiveInputStream tar, AtomicBoolean stopFlag) {
+            super(expandedDir, stopFlag);
             this.resource = resource;
             this.entry = entry;
             this.tar = tar;
