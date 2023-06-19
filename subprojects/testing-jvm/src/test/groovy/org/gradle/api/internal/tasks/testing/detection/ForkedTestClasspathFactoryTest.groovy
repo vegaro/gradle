@@ -32,7 +32,7 @@ import java.util.regex.Pattern
 class ForkedTestClasspathFactoryTest extends Specification {
 
     // The number of internal and external implementation jars loaded from the distribution regardless of framework.
-    private static final int NUM_INTERNAL_JARS = 19
+    private static final int NUM_INTERNAL_JARS = 21
     private static final int NUM_EXTERNAL_JARS = 6
 
     ModuleRegistry moduleRegistry = Mock(ModuleRegistry) {
@@ -54,7 +54,7 @@ class ForkedTestClasspathFactoryTest extends Specification {
         then:
         classpath.applicationClasspath == [new File("cls.jar")]
         classpath.applicationModulepath == [new File("mod.jar")]
-        classpath.implementationClasspath.size() == 25
+        classpath.implementationClasspath.size() == 27
         classpath.implementationClasspath.findAll { it.toString().endsWith("-internal.jar") }.size() == NUM_INTERNAL_JARS
         classpath.implementationClasspath.findAll { it.toString().endsWith("-external.jar") }.size() == NUM_EXTERNAL_JARS
         classpath.implementationModulepath.isEmpty()
@@ -145,7 +145,7 @@ class ForkedTestClasspathFactoryTest extends Specification {
         } else {
             assert classpath.applicationClasspath == cpFiles
             assert classpath.applicationModulepath == mpFiles
-            assert classpath.implementationClasspath.size() == 25
+            assert classpath.implementationClasspath.size() == 27
             assert classpath.implementationModulepath.isEmpty()
         }
 
@@ -197,7 +197,7 @@ class ForkedTestClasspathFactoryTest extends Specification {
         } else {
             assert classpath.applicationClasspath == cpFiles
             assert classpath.applicationModulepath == mpFiles
-            assert classpath.implementationClasspath.size() == 25
+            assert classpath.implementationClasspath.size() == 27
             assert classpath.implementationModulepath.isEmpty()
         }
 

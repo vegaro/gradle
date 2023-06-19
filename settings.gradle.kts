@@ -57,6 +57,8 @@ unassigned {
     subproject("configuration-cache")
     subproject("functional")
     subproject("api-metadata")
+    subproject("base-common-utils")
+    subproject("base-instrumentation-utils")
     subproject("base-services")
     subproject("base-services-groovy")
     subproject("worker-services")
@@ -164,6 +166,8 @@ unassigned {
 // Internal utility and verification projects
 unassigned {
     subproject("internal-instrumentation-api")
+    subproject("internal-instrumentation-call-interception-tool")
+    subproject("internal-instrumentation-property-upgrades")
     subproject("internal-instrumentation-processor")
     subproject("docs")
     subproject("docs-asciidoctor-extensions-base")

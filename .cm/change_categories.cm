@@ -118,9 +118,12 @@ platforms:
       - 'subprojects/instrumentation-agent'
       - 'subprojects/internal-instrumentation-api/'
       - 'subprojects/internal-instrumentation-processor/'
+      - 'subprojects/internal-instrumentation-call-interception-tool/'
   - core:
     name: 'core'
     subprojects:
+      - 'subprojects/base-common-utils/'
+      - 'subprojects/base-instrumentation-utils/'
       - 'subprojects/base-services/'
       - 'subprojects/base-services-groovy/'
       - 'subprojects/bootstrap/'
@@ -174,6 +177,7 @@ platforms:
       - 'subprojects/functional/'
       - 'subprojects/hashing/'
       - 'subprojects/snapshots/'
+      - 'subprojects/internal-instrumentation-property-upgrades/'
   - extensibility:
     name: 'extensibility'
     subprojects:
