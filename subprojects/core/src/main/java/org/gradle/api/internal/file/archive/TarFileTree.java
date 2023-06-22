@@ -22,6 +22,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.DefaultFilePermissions;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
@@ -33,6 +34,7 @@ import org.gradle.internal.file.Chmod;
 import org.gradle.internal.hash.FileHasher;
 import org.gradle.internal.hash.HashCode;
 import org.gradle.util.internal.GFileUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -199,16 +201,6 @@ public class TarFileTree extends AbstractArchiveFileTree {
             return String.format("tar entry %s!%s", resource.getDisplayName(), entry.getName());
         }
 
-        @Override //FIXME
-        public boolean isSymbolicLink() {
-            return false;
-        }
-
-        @Override //FIXME
-        public String getSymbolicLinkTarget() {
-            return null;
-        }
-
         @Override
         public InputStream open() {
             if (read) {
@@ -225,6 +217,12 @@ public class TarFileTree extends AbstractArchiveFileTree {
         @Override
         public FilePermissions getImmutablePermissions() {
             return new DefaultFilePermissions(entry.getMode());
+        }
+
+        @Nullable
+        @Override
+        public SymbolicLinkDetails getSymbolicLinkDetails() {
+            return null; //FIXME
         }
 
         @Override

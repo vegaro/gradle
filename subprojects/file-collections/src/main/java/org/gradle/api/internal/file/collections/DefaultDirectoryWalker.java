@@ -22,8 +22,10 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.AttributeBasedFileVisitDetails;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
+import org.gradle.api.internal.file.DefaultSymbolicLinkDetails;
 import org.gradle.api.internal.file.UnauthorizedFileVisitDetails;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
@@ -89,8 +91,7 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-            boolean preserveLink = linksStrategy.shouldBePreserved(dir);
-            FileVisitDetails details = getFileVisitDetails(dir, attrs, true, preserveLink);
+            FileVisitDetails details = getFileVisitDetails(dir, attrs, true);
             if (directoryDetailsHolder.size() == 0 || shouldVisit(details, spec)) {
                 if (details.isSymbolicLink()) {
                     visitor.visitFile(details);
@@ -114,30 +115,40 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-            boolean preserveLink = linksStrategy.shouldBePreserved(file);
-            FileVisitDetails details = getFileVisitDetails(file, attrs, false, preserveLink);
+            FileVisitDetails details = getFileVisitDetails(file, attrs, false);
             if (shouldVisit(details, spec)) {
+                linksStrategy.maybeThrowOnBrokenLink(details.getSymbolicLinkDetails(), file.toString());
                 visitor.visitFile(details);
             }
             return checkStopFlag();
         }
 
-        private FileVisitDetails getFileVisitDetails(Path file, @Nullable BasicFileAttributes attrs, boolean isDirectory, boolean preserveLink) {
-            File child = file.toFile();
+        private FileVisitDetails getFileVisitDetails(Path file, @Nullable BasicFileAttributes attrs, boolean isDirectory) {
+            SymbolicLinkDetails linkDetails = getLinkDetails(file);
+            boolean preserveLink = linksStrategy.shouldBePreserved(linkDetails);
+            File child = file.toFile(); //TODO: use path here?
             FileVisitDetails dirDetails = directoryDetailsHolder.peek();
             RelativePath childPath = dirDetails != null ? dirDetails.getRelativePath().append(!isDirectory || preserveLink, child.getName()) : rootPath;
             if (attrs == null) {
                 return new UnauthorizedFileVisitDetails(child, childPath);
             } else if (isDirectory && OperatingSystem.current() == OperatingSystem.WINDOWS) {
                 // Workaround for https://github.com/gradle/gradle/issues/11577
-                return new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, preserveLink);
+                return new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, linkDetails, preserveLink);
             } else {
-                return new AttributeBasedFileVisitDetails(child, childPath, stopFlag, fileSystem, attrs, preserveLink);
+                return new AttributeBasedFileVisitDetails(child, childPath, stopFlag, fileSystem, attrs, linkDetails, preserveLink);
             }
         }
 
+        @Nullable
+        private static SymbolicLinkDetails getLinkDetails(Path path) { //TODO: unauthorized case?
+            if (!Files.isSymbolicLink(path)) {
+                return null;
+            }
+            return new DefaultSymbolicLinkDetails(path);
+        }
+
         private FileVisitDetails getUnauthorizedFileVisitDetails(Path file) {
-            return getFileVisitDetails(file, null, false, false);
+            return getFileVisitDetails(file, null, false);
         }
 
         @Override

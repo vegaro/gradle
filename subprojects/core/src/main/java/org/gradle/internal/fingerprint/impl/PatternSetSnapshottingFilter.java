@@ -18,21 +18,22 @@ package org.gradle.internal.fingerprint.impl;
 
 import com.google.common.collect.Iterables;
 import org.gradle.api.Describable;
-import org.gradle.api.GradleException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.DefaultFilePermissions;
+import org.gradle.api.internal.file.DefaultSymbolicLinkDetails;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.file.FileType;
 import org.gradle.internal.file.Stat;
 import org.gradle.internal.snapshot.FileSystemLocationSnapshot;
 import org.gradle.internal.snapshot.SnapshottingFilter;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -98,16 +99,6 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         }
 
         @Override
-        public boolean isSymbolicLink() {
-            return false;
-        }
-
-        @Override
-        public String getSymbolicLinkTarget() {
-            return null; //FIXME
-        }
-
-        @Override
         public long getLastModified() {
             return getFile().lastModified();
         }
@@ -144,6 +135,12 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
             int unixNumeric = stat.getUnixMode(getFile());
             return new DefaultFilePermissions(unixNumeric);
         }
+
+        @Nullable
+        @Override
+        public SymbolicLinkDetails getSymbolicLinkDetails() {
+            return null; //FIXME
+        }
     }
 
     private static class PathBackedFileTreeElement implements ReadOnlyFileTreeElement {
@@ -173,15 +170,6 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         @Override
         public boolean isSymbolicLink() {
             return !isDirectory() && Files.isSymbolicLink(path);
-        }
-
-        @Override
-        public String getSymbolicLinkTarget() {
-            try {
-                return Files.readSymbolicLink(path).toString();
-            } catch (IOException e) {
-                throw new GradleException(String.format("Couldn't read symbolic link '%s'.", path), e);
-            }
         }
 
         @Override
@@ -218,6 +206,16 @@ public class PatternSetSnapshottingFilter implements SnapshottingFilter {
         public FilePermissions getImmutablePermissions() {
             int unixNumeric = stat.getUnixMode(path.toFile());
             return new DefaultFilePermissions(unixNumeric);
+        }
+
+        @Nullable
+        @Override
+        public SymbolicLinkDetails getSymbolicLinkDetails() {
+            if (Files.isSymbolicLink(path)) {
+                return new DefaultSymbolicLinkDetails(path);
+            } else {
+                return null;
+            }
         }
     }
 }

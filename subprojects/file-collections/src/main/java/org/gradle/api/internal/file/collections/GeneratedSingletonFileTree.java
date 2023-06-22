@@ -21,6 +21,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.tasks.util.PatternSet;
@@ -29,6 +30,7 @@ import org.gradle.internal.file.Chmod;
 import org.gradle.internal.io.StreamByteBuffer;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 import org.gradle.util.internal.GFileUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -210,16 +212,6 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
             return false;
         }
 
-        @Override //FIXME
-        public boolean isSymbolicLink() {
-            return false;
-        }
-
-        @Override //FIXME
-        public String getSymbolicLinkTarget() {
-            return null;
-        }
-
         @Override
         public long getLastModified() {
             getFile();
@@ -235,6 +227,12 @@ public class GeneratedSingletonFileTree implements FileSystemMirroringFileTree, 
         @Override
         public RelativePath getRelativePath() {
             return new RelativePath(true, fileName);
+        }
+
+        @Nullable
+        @Override
+        public SymbolicLinkDetails getSymbolicLinkDetails() {
+            return null; //FIXME
         }
 
     }

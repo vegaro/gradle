@@ -23,12 +23,16 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
+import org.gradle.api.internal.file.DefaultSymbolicLinkDetails;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,14 +58,30 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
     public void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<? super ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
         LinksStrategy linksStrategy = visitor.getLinksStrategy();
         linksStrategy = linksStrategy == null ? LinksStrategy.NONE : linksStrategy;
+        walkDir(file, path, visitor, linksStrategy, spec, stopFlag, postfix);
+    }
+
+    //TODO: cover with tests
+    private void walkDir(
+        File file,
+        RelativePath path,
+        FileVisitor visitor,
+        LinksStrategy linksStrategy,
+        Spec<? super ReadOnlyFileTreeElement> spec,
+        AtomicBoolean stopFlag,
+        boolean postfix
+    ) {
         File[] children = getChildren(file);
         if (children == null) {
             if (file.isDirectory() && !file.canRead()) {
                 throw new GradleException(String.format("Could not list contents of directory '%s' as it is not readable.", file));
             }
-            if (linksStrategy.shouldBePreserved(file.toPath())) {
-                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, true);
+            SymbolicLinkDetails linkDetails = getLinkDetails(file.toPath());
+            if (linksStrategy.shouldBePreserved(linkDetails)) {
+                //TODO: fix path
+                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, linkDetails, true);
                 if (DirectoryFileTree.isAllowed(details, spec)) {
+                    linksStrategy.maybeThrowOnBrokenLink(details.getSymbolicLinkDetails(), file.toString());
                     visitor.visitFile(details);
                 }
                 return;
@@ -72,10 +92,11 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
         List<FileVisitDetails> dirs = new ArrayList<FileVisitDetails>();
         for (int i = 0; !stopFlag.get() && i < children.length; i++) {
             File child = children[i];
-            boolean isFile = child.isFile();
+            SymbolicLinkDetails linkDetails = getLinkDetails(file.toPath());
+            boolean isFile = child.isFile(); //TODO: fix path and create a helper method
             RelativePath childPath = path.append(isFile, child.getName());
-            boolean preserveLink = linksStrategy.shouldBePreserved(child.toPath());
-            FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, preserveLink);
+            boolean preserveLink = linksStrategy.shouldBePreserved(linkDetails);
+            FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, linkDetails, preserveLink);
             if (DirectoryFileTree.isAllowed(details, spec)) {
                 if (isFile || preserveLink) {
                     visitor.visitFile(details);
@@ -96,5 +117,13 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
                 walkDir(dir.getFile(), dir.getRelativePath(), visitor, spec, stopFlag, postfix);
             }
         }
+    }
+
+    @Nullable
+    private static SymbolicLinkDetails getLinkDetails(Path path) { //TODO: unauthorized case?
+        if (!Files.isSymbolicLink(path)) {
+            return null;
+        }
+        return new DefaultSymbolicLinkDetails(path);
     }
 }

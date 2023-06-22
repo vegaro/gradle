@@ -27,6 +27,7 @@ import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.DefaultConfigurableFilePermissions;
 import org.gradle.api.model.ObjectFactory;
@@ -35,6 +36,7 @@ import org.gradle.internal.Actions;
 import org.gradle.internal.exceptions.Contextual;
 import org.gradle.internal.file.Chmod;
 import org.gradle.util.internal.GFileUtils;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -112,9 +114,10 @@ public class DefaultFileCopyDetails extends AbstractFileTreeElement implements F
         return fileDetails.isSymbolicLink();
     }
 
+    @Nullable
     @Override
-    public String getSymbolicLinkTarget() {
-        return fileDetails.getSymbolicLinkTarget();
+    public SymbolicLinkDetails getSymbolicLinkDetails() {
+        return fileDetails.getSymbolicLinkDetails();
     }
 
     @Override

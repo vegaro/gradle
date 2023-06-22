@@ -34,7 +34,7 @@ public abstract class DirectoryTrees {
         }
 
         RelativePath path = RelativePath.parse(true, file.getAbsolutePath().substring(prefix.length()));
-        return tree.getPatterns().getAsSpec().isSatisfiedBy(new DefaultFileTreeElement(file, path, fileSystem));
+        return tree.getPatterns().getAsSpec().isSatisfiedBy(new DefaultFileTreeElement(file, path, fileSystem, null)); //TODO: should symlinks be considered here?
     }
 
 }

@@ -18,10 +18,8 @@ package org.gradle.api.file;
 
 import org.gradle.api.GradleException;
 
-import java.io.IOException;
+import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Objects;
 
 /**
@@ -57,52 +55,19 @@ public class LinksStrategy implements Serializable { //TODO: refactor as a lambd
         this.preserveBroken = preserveBroken;
     }
 
-    public boolean getPreserveAbsolute() {
-        return preserveAbsolute;
-    }
-
-    public boolean getPreserveRelative() {
-        return preserveRelative;
-    }
-
-    public boolean getPreserveBroken() {
-        return preserveBroken;
-    }
-
-    public boolean preserveAny() {
-        return preserveAbsolute || preserveRelative || preserveBroken;
-    }
-
-    public boolean shouldBePreserved(Path path) { //FIXME: should be more generic for arhives support
-        if (!Files.isSymbolicLink(path)) {
+    //TODO: convert to spec may be?
+    public boolean shouldBePreserved(@Nullable SymbolicLinkDetails linkDetails) {
+        if (linkDetails == null) {
             return false;
         }
-        Path linkTarget;
-        try {
-            linkTarget = Files.readSymbolicLink(path);
-        } catch (IOException e) {
-            throw new GradleException(String.format("Couldn't read symbolic link '%s'.", path), e);
-        }
-        boolean isAbsolute = linkTarget.isAbsolute();
+        boolean isAbsolute = linkDetails.isAbsolute();
         return (isAbsolute && preserveAbsolute) || (!isAbsolute && preserveRelative);
     }
 
-    //should be a separate method, because an exception should not be thrown if the path is excluded
-    //TODO: cover with test
-    public void processBrokenLink(Path linkTarget) {
-        if (!preserveBroken && !Files.exists(linkTarget)) {
-            throw new GradleException(String.format("Couldn't follow symbolic link '%s'.", linkTarget));
+    public void maybeThrowOnBrokenLink(@Nullable SymbolicLinkDetails linkDetails, String originalPath) {
+        if (linkDetails != null && !preserveBroken && !linkDetails.targetExists()) {
+            throw new GradleException(String.format("Couldn't follow symbolic link '%s'.", originalPath));
         }
-    }
-
-    public boolean shouldBePreserved(String target) { //FIXME: should be more generic for arhives support
-        //String target = path.getSymbolicLinkTarget();
-        //FIXME: fails during unzip because link can be unpacked earlier than target
-//        if (!preserveBroken && !Files.exists(path)) {
-//            throw new GradleException(String.format("Couldn't follow symbolic link '%s'.", path));
-//        }
-        boolean isAbsolute = target.startsWith("/"); //FIXME
-        return (isAbsolute && preserveAbsolute) || (!isAbsolute && preserveRelative);
     }
 
     @Override

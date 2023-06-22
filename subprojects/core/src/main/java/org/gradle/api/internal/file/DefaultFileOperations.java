@@ -181,7 +181,7 @@ public class DefaultFileOperations implements FileOperations {
     @Override
     public FileTreeInternal zipTree(Object zipPath) {
         Provider<File> fileProvider = asFileProvider(zipPath);
-        return new FileTreeAdapter(new ZipFileTree(fileProvider, fileSystem, directoryFileTreeFactory, fileHasher, decompressionCacheFactory.create()), taskDependencyFactory, patternSetFactory);
+        return new FileTreeAdapter(new ZipFileTree(fileProvider, directoryFileTreeFactory, fileHasher, decompressionCacheFactory.create()), taskDependencyFactory, patternSetFactory);
     }
 
     @Override
@@ -202,7 +202,7 @@ public class DefaultFileOperations implements FileOperations {
             public void close() throws IOException {}
         };
 
-        return new FileTreeAdapter(new ZipFileTree(fileProvider, fileSystem, directoryFileTreeFactory, fileHasher, nonLockingCache), taskDependencyFactory, patternSetFactory);
+        return new FileTreeAdapter(new ZipFileTree(fileProvider, directoryFileTreeFactory, fileHasher, nonLockingCache), taskDependencyFactory, patternSetFactory);
     }
 
     @Override

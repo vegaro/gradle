@@ -17,8 +17,10 @@
 package org.gradle.api.internal.file;
 
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.internal.file.Stat;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,9 +34,10 @@ public class AttributeBasedFileVisitDetails extends DefaultFileVisitDetails {
         AtomicBoolean stop,
         Stat stat,
         BasicFileAttributes attributes,
+        @Nullable SymbolicLinkDetails linkDetails,
         boolean preserveLink
     ) {
-        super(file, relativePath, stop, stat, preserveLink);
+        super(file, relativePath, stop, stat, linkDetails, preserveLink);
         this.attributes = attributes;
     }
 

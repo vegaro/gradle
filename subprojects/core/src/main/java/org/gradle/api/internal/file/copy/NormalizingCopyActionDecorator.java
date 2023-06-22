@@ -26,6 +26,7 @@ import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.ExpandDetails;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.tasks.WorkResult;
@@ -143,16 +144,6 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         }
 
         @Override
-        public boolean isSymbolicLink() {
-            return false; //TODO
-        }
-
-        @Override
-        public String getSymbolicLinkTarget() {
-            return null; //TODO
-        }
-
-        @Override
         public long getLastModified() {
             return lastModified;
         }
@@ -165,6 +156,12 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         @Override
         public RelativePath getRelativePath() {
             return path;
+        }
+
+        @Nullable
+        @Override
+        public SymbolicLinkDetails getSymbolicLinkDetails() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

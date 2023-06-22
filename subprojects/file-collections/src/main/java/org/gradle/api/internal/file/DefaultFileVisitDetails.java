@@ -20,9 +20,11 @@ import org.apache.commons.io.IOUtils;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.internal.file.Stat;
 import org.gradle.util.internal.GFileUtils;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,8 +35,15 @@ public class DefaultFileVisitDetails extends DefaultFileTreeElement implements F
     private final AtomicBoolean stop;
     private final boolean preserveLink;
 
-    public DefaultFileVisitDetails(File file, RelativePath relativePath, AtomicBoolean stop, Stat stat, boolean preserveLink) {
-        super(file, relativePath, stat);
+    public DefaultFileVisitDetails(
+        File file,
+        RelativePath relativePath,
+        AtomicBoolean stop,
+        Stat stat, @Nullable
+        SymbolicLinkDetails linkDetails,
+        boolean preserveLink
+    ) {
+        super(file, relativePath, stat, linkDetails);
         this.stop = stop;
         this.preserveLink = preserveLink;
     }

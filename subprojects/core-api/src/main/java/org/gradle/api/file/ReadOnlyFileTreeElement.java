@@ -18,6 +18,8 @@ package org.gradle.api.file;
 
 import org.gradle.api.Incubating;
 
+import javax.annotation.Nullable;
+
 /**
  * Information about a file in a directory/file tree.
  *
@@ -92,19 +94,15 @@ public interface ReadOnlyFileTreeElement {
     FilePermissions getImmutablePermissions();
 
     /**
-     * Returns true if this element is a symbolic link.
-     *
-     * @return true if this element is a symbolic link.
      * @since 8.3
      */
     @Incubating
-    boolean isSymbolicLink(); //TODO: is it nessesary?
+    @Nullable
+    SymbolicLinkDetails getSymbolicLinkDetails();
 
-    /**
-     * @since 8.3
-     */
     @Incubating
-    //FIXME: use relative path?
-    String getSymbolicLinkTarget();
+    default boolean isSymbolicLink() {
+        return getSymbolicLinkDetails() != null;
+    }
 }
 

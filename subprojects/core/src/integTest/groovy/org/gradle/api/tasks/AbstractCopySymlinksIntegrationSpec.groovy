@@ -201,6 +201,35 @@ abstract class AbstractCopySymlinksIntegrationSpec extends AbstractIntegrationSp
         preserveLinks << ["LinksStrategy.ALL"]
     }
 
+    def "broken links should not cause errors if they are excluded"() {
+        given:
+        def originalFile = inputDirectory.createFile("original.txt") << "some text"
+        def link = inputDirectory.file("link").createLink("non-existent-file")
+
+        buildKotlinFile << constructBuildScript(
+            """
+            preserveLinks = $preserveLinks
+            from("${inputDirectory.name}"){
+                exclude("**/${link.name}")
+            }
+            """
+        )
+
+        when:
+        succeeds(mainTask)
+        def outputDirectory = getResultDir()
+
+        then:
+        def originalCopy = outputDirectory.file(originalFile.name)
+        isCopy(originalCopy, originalFile)
+
+        def linkCopy = outputDirectory.file(link.name)
+        !linkCopy.exists()
+
+        where:
+        preserveLinks << ["LinksStrategy.NONE", null]
+    }
+
     def "nested spec should be processed properly with parent preserveLinks=#preserveLinksParent and child preserveLinks=#preserveLinksChild"() {
         given:
         def inputWithChildSpec = inputDirectory.createDir("input-child")
@@ -332,6 +361,7 @@ abstract class AbstractCopySymlinksIntegrationSpec extends AbstractIntegrationSp
         "LinksStrategy.NONE" | true
         null                 | true
     }
+
 
     //TODO: tests for up-to-date checks
     //TODO: symlink change between builds

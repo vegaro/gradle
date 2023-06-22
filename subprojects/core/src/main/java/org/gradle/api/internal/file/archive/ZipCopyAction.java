@@ -158,7 +158,7 @@ public class ZipCopyAction implements CopyAction {
                 mode |= UnixStat.LINK_FLAG;
                 archiveEntry.setUnixMode(mode);
                 zipOutStr.putArchiveEntry(archiveEntry);
-                String target = fileDetails.getSymbolicLinkTarget();
+                String target = fileDetails.getSymbolicLinkDetails().getTarget();
                 zipOutStr.write(target.getBytes());
                 zipOutStr.closeArchiveEntry();
             } catch (Exception e) {

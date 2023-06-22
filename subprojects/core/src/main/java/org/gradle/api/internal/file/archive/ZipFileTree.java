@@ -24,13 +24,14 @@ import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.LinksStrategy;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.DefaultFilePermissions;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
 import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
 import org.gradle.api.provider.Provider;
 import org.gradle.cache.internal.DecompressionCache;
-import org.gradle.internal.file.Chmod;
 import org.gradle.internal.hash.FileHasher;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,20 +48,17 @@ import static org.gradle.util.internal.ZipSlip.safeZipEntryName;
 
 public class ZipFileTree extends AbstractArchiveFileTree {
     private final Provider<File> fileProvider;
-    private final Chmod chmod;
     private final DirectoryFileTreeFactory directoryFileTreeFactory;
     private final FileHasher fileHasher;
 
     public ZipFileTree(
         Provider<File> zipFile,
-        Chmod chmod,
         DirectoryFileTreeFactory directoryFileTreeFactory,
         FileHasher fileHasher,
         DecompressionCache decompressionCache
     ) {
         super(decompressionCache);
         this.fileProvider = zipFile;
-        this.chmod = chmod;
         this.directoryFileTreeFactory = directoryFileTreeFactory;
         this.fileHasher = fileHasher;
     }
@@ -102,8 +100,12 @@ public class ZipFileTree extends AbstractArchiveFileTree {
                 while (!stopFlag.get() && sortedEntries.hasNext()) {
                     ZipArchiveEntry entry = sortedEntries.next();
 
-                    boolean preserveLink = entry.isUnixSymlink() && linksStrategy.shouldBePreserved(IOUtils.toString(zip.getInputStream(entry), StandardCharsets.UTF_8)); //FIXME: refactor
-                    DetailsImpl details = new DetailsImpl(zipFile, expandedDir, entry, zip, stopFlag, preserveLink);
+                    SymbolicLinkDetails linkDetails = null;
+                    if (entry.isUnixSymlink()) {
+                        linkDetails = new SymbolicLinkDetailsImpl(entry, zip);
+                    }
+                    boolean preserveLink = linksStrategy.shouldBePreserved(linkDetails);
+                    DetailsImpl details = new DetailsImpl(zipFile, expandedDir, entry, zip, stopFlag, linkDetails, preserveLink);
                     if (entry.isDirectory()) {
                         visitor.visitDir(details);
                     } else {
@@ -143,12 +145,15 @@ public class ZipFileTree extends AbstractArchiveFileTree {
         private final ZipFile zip;
         private final boolean preserveLink;
 
-        public DetailsImpl(File originalFile, File expandedDir, ZipArchiveEntry entry, ZipFile zip, AtomicBoolean stopFlag, boolean preserveLink) {
+        private final SymbolicLinkDetails linkDetails;
+
+        public DetailsImpl(File originalFile, File expandedDir, ZipArchiveEntry entry, ZipFile zip, AtomicBoolean stopFlag, @Nullable SymbolicLinkDetails linkDetails, boolean preserveLink) {
             super(expandedDir, stopFlag);
             this.originalFile = originalFile;
             this.entry = entry;
             this.zip = zip;
             this.preserveLink = preserveLink;
+            this.linkDetails = linkDetails;
         }
 
         @Override
@@ -172,19 +177,6 @@ public class ZipFileTree extends AbstractArchiveFileTree {
         }
 
         @Override
-        public String getSymbolicLinkTarget() { //TODO: cache
-            if (isSymbolicLink()) {
-                try (InputStream is = open()) {
-                    return IOUtils.toString(is, StandardCharsets.UTF_8);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            } else {
-                throw new GradleException("Not a symbolic link: " + getDisplayName() + ".");
-            }
-        }
-
-        @Override
         public InputStream open() {
             try {
                 return zip.getInputStream(entry);
@@ -202,5 +194,45 @@ public class ZipFileTree extends AbstractArchiveFileTree {
 
             return super.getImmutablePermissions();
         }
+
+        @Nullable
+        @Override
+        public SymbolicLinkDetails getSymbolicLinkDetails() {
+            return linkDetails;
+        }
+
+    }
+
+    private static final class SymbolicLinkDetailsImpl implements SymbolicLinkDetails {
+        private String target;
+        private final ZipArchiveEntry entry;
+        private final ZipFile zip;
+
+        SymbolicLinkDetailsImpl(ZipArchiveEntry entry, ZipFile zip) {
+            this.entry = entry;
+            this.zip = zip;
+        }
+
+        @Override
+        public boolean isAbsolute() {
+            return getTarget().startsWith("/");
+        }
+
+        @Override
+        public String getTarget() {
+            if (target == null) {
+                try (InputStream is = zip.getInputStream(entry)) {
+                    target = IOUtils.toString(is, StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+            return target;
+        }
+
+        @Override
+        public boolean targetExists() {
+            return false;
+        } //FIXME: check properly
     }
 }

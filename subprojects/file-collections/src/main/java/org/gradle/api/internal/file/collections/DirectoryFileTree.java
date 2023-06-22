@@ -25,7 +25,9 @@ import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
 import org.gradle.api.file.ReproducibleFileVisitor;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
+import org.gradle.api.internal.file.DefaultSymbolicLinkDetails;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.util.PatternFilterable;
@@ -36,7 +38,10 @@ import org.gradle.util.internal.GUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -136,12 +141,24 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
     private void processSingleFile(File file, FileVisitor visitor, Spec<ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag) {
         LinksStrategy linksStrategy = visitor.getLinksStrategy();
         linksStrategy = linksStrategy == null ? LinksStrategy.NONE : linksStrategy;
-        boolean preserveLink = linksStrategy.shouldBePreserved(file.toPath());
+
+        SymbolicLinkDetails linkDetails = getLinkDetails(file.toPath());
+        boolean preserveLink = linksStrategy.shouldBePreserved(linkDetails);
+
         RelativePath path = new RelativePath(true, file.getName());
-        FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, preserveLink);
+        FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, linkDetails, preserveLink);
         if (isAllowed(details, spec)) {
+            linksStrategy.maybeThrowOnBrokenLink(details.getSymbolicLinkDetails(), file.toString());
             visitor.visitFile(details);
         }
+    }
+
+    @Nullable
+    private static SymbolicLinkDetails getLinkDetails(Path path) {
+        if (!Files.isSymbolicLink(path)) {
+            return null;
+        }
+        return new DefaultSymbolicLinkDetails(path);
     }
 
     private void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag) {

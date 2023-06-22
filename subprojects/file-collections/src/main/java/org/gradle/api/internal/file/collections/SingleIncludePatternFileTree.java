@@ -22,7 +22,9 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
+import org.gradle.api.internal.file.DefaultSymbolicLinkDetails;
 import org.gradle.api.internal.file.FileTreeInternal;
 import org.gradle.api.internal.file.pattern.PatternStep;
 import org.gradle.api.internal.file.pattern.PatternStepFactory;
@@ -32,7 +34,10 @@ import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 import org.gradle.internal.nativeintegration.services.FileSystems;
 
+import javax.annotation.Nullable;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -131,18 +136,19 @@ public class SingleIncludePatternFileTree implements MinimalFileTree, LocalFileT
     private void doVisitDirOrFile(FileVisitor visitor, File file, LinkedList<String> relativePath, int segmentIndex, AtomicBoolean stopFlag) {
         LinksStrategy linksStrategy = visitor.getLinksStrategy();
         linksStrategy = linksStrategy == null ? LinksStrategy.NONE : linksStrategy;
-        boolean preserveLink = linksStrategy.shouldBePreserved(file.toPath());
+        //TODO: fix this to properly support links?
+        boolean preserveLink = linksStrategy.shouldBePreserved(null);
         if (file.isFile()) {
             if (segmentIndex == patternSegments.size()) {
                 RelativePath path = new RelativePath(true, relativePath.toArray(new String[relativePath.size()]));
-                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, preserveLink);
+                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, null, preserveLink);
                 if (!excludeSpec.isSatisfiedBy(details)) {
                     visitor.visitFile(details);
                 }
             }
         } else if (file.isDirectory()) {
             RelativePath path = new RelativePath(false, relativePath.toArray(new String[relativePath.size()]));
-            FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, preserveLink);
+            FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, null, preserveLink);
             if (!excludeSpec.isSatisfiedBy(details)) {
                 visitor.visitDir(details);
             }
@@ -150,6 +156,14 @@ public class SingleIncludePatternFileTree implements MinimalFileTree, LocalFileT
                 doVisit(visitor, file, relativePath, segmentIndex, stopFlag);
             }
         }
+    }
+
+    @Nullable
+    private static SymbolicLinkDetails getLinkDetails(Path path) { //TODO: unauthorized case?
+        if (!Files.isSymbolicLink(path)) {
+            return null;
+        }
+        return new DefaultSymbolicLinkDetails(path);
     }
 
     @Override

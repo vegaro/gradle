@@ -15,14 +15,13 @@
  */
 package org.gradle.api.internal.file;
 
-import org.gradle.api.GradleException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.RelativePath;
+import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.internal.file.Stat;
-import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 
+import javax.annotation.Nullable;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 
 public class DefaultFileTreeElement extends AbstractFileTreeElement {
@@ -30,15 +29,13 @@ public class DefaultFileTreeElement extends AbstractFileTreeElement {
     private final RelativePath relativePath;
     private final Stat stat;
 
-    public DefaultFileTreeElement(File file, RelativePath relativePath, Stat stat) {
+    private final SymbolicLinkDetails linkDetails;
+
+    public DefaultFileTreeElement(File file, RelativePath relativePath, Stat stat, @Nullable SymbolicLinkDetails linkDetails) {
         this.file = file;
         this.relativePath = relativePath;
         this.stat = stat;
-    }
-
-    public static DefaultFileTreeElement of(File file, FileSystem fileSystem) {
-        RelativePath path = RelativePath.parse(!file.isDirectory(), file.getAbsolutePath());
-        return new DefaultFileTreeElement(file, path, fileSystem);
+        this.linkDetails = linkDetails;
     }
 
     @Override
@@ -67,15 +64,6 @@ public class DefaultFileTreeElement extends AbstractFileTreeElement {
     }
 
     @Override
-    public String getSymbolicLinkTarget() {
-        try {
-            return Files.readSymbolicLink(file.toPath()).toString();
-        } catch (IOException e) {
-            throw new GradleException(String.format("Couldn't read symbolic link '%s'.", file.toPath()), e);
-        }
-    }
-
-    @Override
     public RelativePath getRelativePath() {
         return relativePath;
     }
@@ -84,5 +72,10 @@ public class DefaultFileTreeElement extends AbstractFileTreeElement {
     public FilePermissions getImmutablePermissions() {
         int unixNumeric = stat.getUnixMode(file);
         return new DefaultFilePermissions(unixNumeric);
+    }
+
+    @Override
+    public SymbolicLinkDetails getSymbolicLinkDetails() {
+        return linkDetails;
     }
 }

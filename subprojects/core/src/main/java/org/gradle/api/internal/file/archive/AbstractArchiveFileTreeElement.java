@@ -123,7 +123,7 @@ public abstract class AbstractArchiveFileTreeElement extends AbstractFileTreeEle
     }
 
     protected void copySymlinkTo(File target) { //FIXME: permissions?
-        Path targetPath = new File(getSymbolicLinkTarget().replace("/", File.separator)).toPath();
+        Path targetPath = new File(getSymbolicLinkDetails().getTarget().replace("/", File.separator)).toPath();
         try {
             Files.createSymbolicLink(target.toPath(), targetPath);
         } catch (IOException e) {
