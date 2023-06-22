@@ -1,12 +1,10 @@
 {
     "acceptedApiChanges": [
         {
-            "type": "org.gradle.util.SingleMessageLogger",
-            "member": "Class org.gradle.util.SingleMessageLogger",
-            "acceptation": "Changed the signature of internal method",
-            "changes": [
-                "org.gradle.internal.deprecation.DeprecationLogger.init(org.gradle.internal.featurelifecycle.UsageLocationReporter,org.gradle.api.logging.configuration.WarningMode,org.gradle.internal.operations.BuildOperationProgressEventEmitter)"
-            ]
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Class org.gradle.api.file.ReadOnlyFileTreeElement",
+            "acceptation": "The interface was extracted from FileTreeElement",
+            "changes": []
         },
         {
             "type": "org.gradle.api.file.RelativePath",
@@ -15,6 +13,56 @@
             "changes": [
                 "From non-null returning to null returning breaking change"
             ]
+        },
+        {
+            "type": "org.gradle.util.SingleMessageLogger",
+            "member": "Class org.gradle.util.SingleMessageLogger",
+            "acceptation": "Changed the signature of internal method",
+            "changes": [
+                "org.gradle.internal.deprecation.DeprecationLogger.init(org.gradle.internal.featurelifecycle.UsageLocationReporter,org.gradle.api.logging.configuration.WarningMode,org.gradle.internal.operations.BuildOperationProgressEventEmitter)"
+            ]
+        },
+        {
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Method org.gradle.api.file.ReadOnlyFileTreeElement.getLastModified()",
+            "acceptation": "The method was extracted from FileTreeElement",
+            "changes": []
+        },
+        {
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Method org.gradle.api.file.ReadOnlyFileTreeElement.getMode()",
+            "acceptation": "The method was extracted from FileTreeElement",
+            "changes": []
+        },
+        {
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Method org.gradle.api.file.ReadOnlyFileTreeElement.getName()",
+            "acceptation": "The method was extracted from FileTreeElement",
+            "changes": []
+        },
+        {
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Method org.gradle.api.file.ReadOnlyFileTreeElement.getPath()",
+            "acceptation": "The method was extracted from FileTreeElement",
+            "changes": []
+        },
+        {
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Method org.gradle.api.file.ReadOnlyFileTreeElement.getRelativePath()",
+            "acceptation": "The method was extracted from FileTreeElement",
+            "changes": []
+        },
+        {
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Method org.gradle.api.file.ReadOnlyFileTreeElement.getSize()",
+            "acceptation": "The method was extracted from FileTreeElement",
+            "changes": []
+        },
+        {
+            "type": "org.gradle.api.file.ReadOnlyFileTreeElement",
+            "member": "Method org.gradle.api.file.ReadOnlyFileTreeElement.isDirectory()",
+            "acceptation": "The method was extracted from FileTreeElement",
+            "changes": []
         }
     ]
 }

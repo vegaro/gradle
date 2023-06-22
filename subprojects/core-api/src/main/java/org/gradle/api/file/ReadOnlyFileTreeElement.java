@@ -23,30 +23,21 @@ import org.gradle.api.Incubating;
  *
  * @since 8.3
  */
-@Incubating
 public interface ReadOnlyFileTreeElement {
     /**
      * Returns true if this element is a directory, or false if this element is a regular file.
      * Returns true if this element is a symbolic link to a directory.
      *
      * @return true if this element is a directory.
+     * @since 0.9
      */
     boolean isDirectory();
-
-    /**
-     * Returns true if this element is a symbolic link.
-     *
-     * @return true if this element is a symbolic link.
-     */
-    boolean isSymbolicLink(); //TODO: is it nessesary?
-
-    //FIXME: use relative path?
-    String getSymbolicLinkTarget();
 
     /**
      * Returns the last modified time of this file at the time of file traversal.
      *
      * @return The last modified time.
+     * @since 0.9
      */
     long getLastModified();
 
@@ -54,6 +45,7 @@ public interface ReadOnlyFileTreeElement {
      * Returns the size of this file at the time of file traversal.
      *
      * @return The size, in bytes.
+     * @since 0.9
      */
     long getSize();
 
@@ -61,6 +53,7 @@ public interface ReadOnlyFileTreeElement {
      * Returns the base name of this file.
      *
      * @return The name. Never returns null.
+     * @since 0.9
      */
     String getName();
 
@@ -69,6 +62,7 @@ public interface ReadOnlyFileTreeElement {
      * separator, regardless of platform file separator. Same as calling <code>getRelativePath().getPathString()</code>.
      *
      * @return The path. Never returns null.
+     * @since 0.9
      */
     String getPath();
 
@@ -76,9 +70,16 @@ public interface ReadOnlyFileTreeElement {
      * Returns the path of this file, relative to the root of the containing file tree.
      *
      * @return The path. Never returns null.
+     * @since 0.9
      */
     RelativePath getRelativePath();
 
+    /**
+     * Returns the Unix permissions of this file, e.g. {@code 0644}.
+     *
+     * @return The Unix file permissions.
+     * @since 1.0
+     */
     int getMode();
 
     /**
@@ -89,5 +90,21 @@ public interface ReadOnlyFileTreeElement {
      */
     @Incubating
     FilePermissions getImmutablePermissions();
+
+    /**
+     * Returns true if this element is a symbolic link.
+     *
+     * @return true if this element is a symbolic link.
+     * @since 8.3
+     */
+    @Incubating
+    boolean isSymbolicLink(); //TODO: is it nessesary?
+
+    /**
+     * @since 8.3
+     */
+    @Incubating
+    //FIXME: use relative path?
+    String getSymbolicLinkTarget();
 }
 
