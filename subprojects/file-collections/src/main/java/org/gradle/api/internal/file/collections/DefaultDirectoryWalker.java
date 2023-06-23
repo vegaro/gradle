@@ -19,27 +19,15 @@ package org.gradle.api.internal.file.collections;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
-import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
-import org.gradle.api.file.SymbolicLinkDetails;
-import org.gradle.api.internal.file.AttributeBasedFileVisitDetails;
-import org.gradle.api.internal.file.DefaultFileVisitDetails;
-import org.gradle.api.internal.file.DefaultSymbolicLinkDetails;
-import org.gradle.api.internal.file.UnauthorizedFileVisitDetails;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
-import org.gradle.internal.os.OperatingSystem;
 
-import javax.annotation.Nullable;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystemLoopException;
 import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.EnumSet;
@@ -52,134 +40,14 @@ public class DefaultDirectoryWalker implements DirectoryWalker {
         this.fileSystem = fileSystem;
     }
 
-    static boolean shouldVisit(ReadOnlyFileTreeElement element, Spec<? super ReadOnlyFileTreeElement> spec) {
-        return spec.isSatisfiedBy(element);
-    }
-
     @Override
-    public void walkDir(File rootDir, RelativePath rootPath, FileVisitor visitor, Spec<? super ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
+    public void walkDir(Path rootDir, RelativePath rootPath, FileVisitor visitor, Spec<? super ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
         Deque<FileVisitDetails> directoryDetailsHolder = new ArrayDeque<>();
-
         try {
             PathVisitor pathVisitor = new PathVisitor(directoryDetailsHolder, spec, postfix, visitor, stopFlag, rootPath, fileSystem);
-            Files.walkFileTree(rootDir.toPath(), EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, pathVisitor);
+            Files.walkFileTree(rootDir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, pathVisitor);
         } catch (IOException e) {
             throw new GradleException(String.format("Could not list contents of directory '%s'.", rootDir), e);
-        }
-    }
-
-    private static class PathVisitor implements java.nio.file.FileVisitor<Path> {
-        private final Deque<FileVisitDetails> directoryDetailsHolder;
-        private final Spec<? super ReadOnlyFileTreeElement> spec;
-        private final boolean postfix;
-        private final FileVisitor visitor;
-        private final AtomicBoolean stopFlag;
-        private final RelativePath rootPath;
-        private final FileSystem fileSystem;
-        private final LinksStrategy linksStrategy;
-
-        public PathVisitor(Deque<FileVisitDetails> directoryDetailsHolder, Spec<? super ReadOnlyFileTreeElement> spec, boolean postfix, FileVisitor visitor, AtomicBoolean stopFlag, RelativePath rootPath, FileSystem fileSystem) {
-            this.directoryDetailsHolder = directoryDetailsHolder;
-            this.spec = spec;
-            this.postfix = postfix;
-            this.visitor = visitor;
-            this.stopFlag = stopFlag;
-            this.rootPath = rootPath;
-            this.fileSystem = fileSystem;
-            this.linksStrategy = visitor.getLinksStrategy() == null ? LinksStrategy.NONE : visitor.getLinksStrategy();
-        }
-
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-            FileVisitDetails details = getFileVisitDetails(dir, attrs, true);
-            if (directoryDetailsHolder.size() == 0 || shouldVisit(details, spec)) {
-                if (details.isSymbolicLink()) {
-                    visitor.visitFile(details);
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-                directoryDetailsHolder.push(details);
-                if (directoryDetailsHolder.size() > 1 && !postfix) {
-                    visitor.visitDir(details);
-                }
-                return checkStopFlag();
-            } else {
-                return FileVisitResult.SKIP_SUBTREE;
-            }
-        }
-
-        private FileVisitResult checkStopFlag() {
-            return stopFlag.get()
-                ? FileVisitResult.TERMINATE
-                : FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-            FileVisitDetails details = getFileVisitDetails(file, attrs, false);
-            if (shouldVisit(details, spec)) {
-                linksStrategy.maybeThrowOnBrokenLink(details.getSymbolicLinkDetails(), file.toString());
-                visitor.visitFile(details);
-            }
-            return checkStopFlag();
-        }
-
-        private FileVisitDetails getFileVisitDetails(Path file, @Nullable BasicFileAttributes attrs, boolean isDirectory) {
-            SymbolicLinkDetails linkDetails = getLinkDetails(file);
-            boolean preserveLink = linksStrategy.shouldBePreserved(linkDetails);
-            File child = file.toFile(); //TODO: use path here?
-            FileVisitDetails dirDetails = directoryDetailsHolder.peek();
-            RelativePath childPath = dirDetails != null ? dirDetails.getRelativePath().append(!isDirectory || preserveLink, child.getName()) : rootPath;
-            if (attrs == null) {
-                return new UnauthorizedFileVisitDetails(child, childPath);
-            } else if (isDirectory && OperatingSystem.current() == OperatingSystem.WINDOWS) {
-                // Workaround for https://github.com/gradle/gradle/issues/11577
-                return new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, linkDetails, preserveLink);
-            } else {
-                return new AttributeBasedFileVisitDetails(child, childPath, stopFlag, fileSystem, attrs, linkDetails, preserveLink);
-            }
-        }
-
-        @Nullable
-        private static SymbolicLinkDetails getLinkDetails(Path path) { //TODO: unauthorized case?
-            if (!Files.isSymbolicLink(path)) {
-                return null;
-            }
-            return new DefaultSymbolicLinkDetails(path);
-        }
-
-        private FileVisitDetails getUnauthorizedFileVisitDetails(Path file) {
-            return getFileVisitDetails(file, null, false);
-        }
-
-        @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) {
-            FileVisitDetails details = getUnauthorizedFileVisitDetails(file);
-            if (isNotFileSystemLoopException(exc) && shouldVisit(details, spec)) {
-                throw new GradleException(String.format("Could not read path '%s'.", file), exc);
-            }
-            return checkStopFlag();
-        }
-
-        private boolean isNotFileSystemLoopException(IOException e) {
-            return e != null && !(e instanceof FileSystemLoopException);
-        }
-
-        @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-            if (exc != null) {
-                if (!(exc instanceof FileSystemLoopException)) {
-                    throw new GradleException(String.format("Could not read directory path '%s'.", dir), exc);
-                }
-            } else {
-                if (postfix) {
-                    FileVisitDetails details = directoryDetailsHolder.peek();
-                    if (directoryDetailsHolder.size() > 1 && details != null) {
-                        visitor.visitDir(details);
-                    }
-                }
-            }
-            directoryDetailsHolder.pop();
-            return checkStopFlag();
         }
     }
 }

@@ -126,9 +126,7 @@ public class ZipCopyAction implements CopyAction {
             try {
                 ZipArchiveEntry archiveEntry = new ZipArchiveEntry(fileDetails.getRelativePath().getPathString());
                 archiveEntry.setTime(getArchiveTimeFor(fileDetails));
-                int mode = fileDetails.getImmutablePermissions().toUnixNumeric();
-                mode |= UnixStat.FILE_FLAG;
-                archiveEntry.setUnixMode(mode);
+                archiveEntry.setUnixMode(UnixStat.FILE_FLAG | fileDetails.getImmutablePermissions().toUnixNumeric());
                 zipOutStr.putArchiveEntry(archiveEntry);
                 fileDetails.copyTo(zipOutStr);
                 zipOutStr.closeArchiveEntry();
@@ -154,9 +152,7 @@ public class ZipCopyAction implements CopyAction {
             try {
                 ZipArchiveEntry archiveEntry = new ZipArchiveEntry(fileDetails.getRelativePath().getPathString());
                 archiveEntry.setTime(getArchiveTimeFor(fileDetails));
-                int mode = fileDetails.getImmutablePermissions().toUnixNumeric();
-                mode |= UnixStat.LINK_FLAG;
-                archiveEntry.setUnixMode(mode);
+                archiveEntry.setUnixMode(UnixStat.LINK_FLAG | fileDetails.getImmutablePermissions().toUnixNumeric());
                 zipOutStr.putArchiveEntry(archiveEntry);
                 String target = fileDetails.getSymbolicLinkDetails().getTarget();
                 zipOutStr.write(target.getBytes());

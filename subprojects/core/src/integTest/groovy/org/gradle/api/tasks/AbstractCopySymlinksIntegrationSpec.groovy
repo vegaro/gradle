@@ -54,7 +54,7 @@ abstract class AbstractCopySymlinksIntegrationSpec extends AbstractIntegrationSp
         )
 
         when:
-        succeeds(mainTask, "-s")
+        succeeds(mainTask)
         def outputDirectory = getResultDir()
 
         then:

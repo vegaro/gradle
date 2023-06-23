@@ -23,20 +23,23 @@ import org.gradle.api.file.FileVisitor;
 import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.ReadOnlyFileTreeElement;
 import org.gradle.api.file.RelativePath;
-import org.gradle.api.file.SymbolicLinkDetails;
-import org.gradle.api.internal.file.DefaultFileVisitDetails;
-import org.gradle.api.internal.file.DefaultSymbolicLinkDetails;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class ReproducibleDirectoryWalker implements DirectoryWalker {
     private final FileSystem fileSystem;
@@ -55,75 +58,53 @@ public class ReproducibleDirectoryWalker implements DirectoryWalker {
     }
 
     @Override
-    public void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<? super ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
+    public void walkDir(Path rootDir, RelativePath rootPath, FileVisitor visitor, Spec<? super ReadOnlyFileTreeElement> spec, AtomicBoolean stopFlag, boolean postfix) {
         LinksStrategy linksStrategy = visitor.getLinksStrategy();
         linksStrategy = linksStrategy == null ? LinksStrategy.NONE : linksStrategy;
-        walkDir(file, path, visitor, linksStrategy, spec, stopFlag, postfix);
+
+        Deque<FileVisitDetails> directoryDetailsHolder = new ArrayDeque<>();
+        try {
+            PathVisitor pathVisitor = new PathVisitor(directoryDetailsHolder, spec, postfix, visitor, stopFlag, rootPath, fileSystem);
+            visit(rootDir, pathVisitor);
+        } catch (IOException e) {
+            throw new GradleException(String.format("Could not list contents of directory '%s'.", rootDir), e);
+        }
     }
 
-    //TODO: cover with tests
-    private void walkDir(
-        File file,
-        RelativePath path,
-        FileVisitor visitor,
-        LinksStrategy linksStrategy,
-        Spec<? super ReadOnlyFileTreeElement> spec,
-        AtomicBoolean stopFlag,
-        boolean postfix
-    ) {
-        File[] children = getChildren(file);
-        if (children == null) {
-            if (file.isDirectory() && !file.canRead()) {
-                throw new GradleException(String.format("Could not list contents of directory '%s' as it is not readable.", file));
+    private static FileVisitResult visit(Path path, PathVisitor pathVisitor) throws IOException {
+        BasicFileAttributes attrs;
+        try {
+            attrs = Files.readAttributes(path, BasicFileAttributes.class);
+        } catch (IOException e) {
+            try {
+                attrs = Files.readAttributes(path, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            } catch (IOException next) {
+                return pathVisitor.visitFileFailed(path, next);
             }
-            SymbolicLinkDetails linkDetails = getLinkDetails(file.toPath());
-            if (linksStrategy.shouldBePreserved(linkDetails)) {
-                //TODO: fix path
-                FileVisitDetails details = new DefaultFileVisitDetails(file, path, stopFlag, fileSystem, linkDetails, true);
-                if (DirectoryFileTree.isAllowed(details, spec)) {
-                    linksStrategy.maybeThrowOnBrokenLink(details.getSymbolicLinkDetails(), file.toString());
-                    visitor.visitFile(details);
+        }
+
+        if (attrs.isDirectory()) {
+            FileVisitResult fvr = pathVisitor.preVisitDirectory(path, attrs);
+            if (fvr == FileVisitResult.SKIP_SUBTREE || fvr == FileVisitResult.TERMINATE) {
+                return fvr;
+            }
+            IOException exception = null;
+            try (Stream<Path> fileStream = Files.list(path)) {
+                Iterable<Path> files = () -> fileStream.sorted(order).iterator();
+                for (Path child : files) {
+                    FileVisitResult childResult = visit(child, pathVisitor);
+                    if (childResult == FileVisitResult.TERMINATE) {
+                        return childResult;
+                    }
                 }
-                return;
+            } catch (IOException e) {
+                exception = e;
             }
-            // else, might be a link which points to nothing, or has been removed while we're visiting, or ...
-            throw new GradleException(String.format("Could not list contents of '%s'.", file));
-        }
-        List<FileVisitDetails> dirs = new ArrayList<FileVisitDetails>();
-        for (int i = 0; !stopFlag.get() && i < children.length; i++) {
-            File child = children[i];
-            SymbolicLinkDetails linkDetails = getLinkDetails(file.toPath());
-            boolean isFile = child.isFile(); //TODO: fix path and create a helper method
-            RelativePath childPath = path.append(isFile, child.getName());
-            boolean preserveLink = linksStrategy.shouldBePreserved(linkDetails);
-            FileVisitDetails details = new DefaultFileVisitDetails(child, childPath, stopFlag, fileSystem, linkDetails, preserveLink);
-            if (DirectoryFileTree.isAllowed(details, spec)) {
-                if (isFile || preserveLink) {
-                    visitor.visitFile(details);
-                } else {
-                    dirs.add(details);
-                }
-            }
-        }
-
-        // now handle dirs
-        for (int i = 0; !stopFlag.get() && i < dirs.size(); i++) {
-            FileVisitDetails dir = dirs.get(i);
-            if (postfix) {
-                walkDir(dir.getFile(), dir.getRelativePath(), visitor, spec, stopFlag, postfix);
-                visitor.visitDir(dir);
-            } else {
-                visitor.visitDir(dir);
-                walkDir(dir.getFile(), dir.getRelativePath(), visitor, spec, stopFlag, postfix);
-            }
+            return pathVisitor.postVisitDirectory(path, exception);
+        } else {
+            return pathVisitor.visitFile(path, attrs);
         }
     }
 
-    @Nullable
-    private static SymbolicLinkDetails getLinkDetails(Path path) { //TODO: unauthorized case?
-        if (!Files.isSymbolicLink(path)) {
-            return null;
-        }
-        return new DefaultSymbolicLinkDetails(path);
-    }
+    private final static Comparator<Path> order = Comparator.<Path, Boolean>comparing(x -> x.toFile().isDirectory()).thenComparing(Path::toString);
 }
