@@ -217,7 +217,7 @@ public class DefaultFileOperations implements FileOperations {
             }
         });
 
-        TarFileTree tarTree = new TarFileTree(fileProvider, resource.map(MaybeCompressedFileResource::new), fileSystem, directoryFileTreeFactory, fileHasher, decompressionCacheFactory.create());
+        TarFileTree tarTree = new TarFileTree(fileProvider, resource.map(MaybeCompressedFileResource::new), directoryFileTreeFactory, fileHasher, decompressionCacheFactory.create());
         return new FileTreeAdapter(tarTree, taskDependencyFactory, patternSetFactory);
     }
 

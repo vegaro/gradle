@@ -20,8 +20,10 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.IOUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.InvalidUserDataException;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FilePermissions;
 import org.gradle.api.file.FileVisitor;
+import org.gradle.api.file.LinksStrategy;
 import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.DefaultFilePermissions;
 import org.gradle.api.internal.file.collections.DirectoryFileTree;
@@ -30,7 +32,6 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.resources.ResourceException;
 import org.gradle.api.resources.internal.ReadableResourceInternal;
 import org.gradle.cache.internal.DecompressionCache;
-import org.gradle.internal.file.Chmod;
 import org.gradle.internal.hash.FileHasher;
 import org.gradle.internal.hash.HashCode;
 import org.gradle.util.internal.GFileUtils;
@@ -41,27 +42,25 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TarFileTree extends AbstractArchiveFileTree {
     private final Provider<File> tarFileProvider;
     private final Provider<ReadableResourceInternal> resource;
-    private final Chmod chmod;
     private final DirectoryFileTreeFactory directoryFileTreeFactory;
     private final FileHasher fileHasher;
 
     public TarFileTree(
             Provider<File> tarFileProvider,
             Provider<ReadableResourceInternal> resource,
-            Chmod chmod,
             DirectoryFileTreeFactory directoryFileTreeFactory,
             FileHasher fileHasher,
             DecompressionCache decompressionCache) {
         super(decompressionCache);
         this.tarFileProvider = tarFileProvider;
         this.resource = resource;
-        this.chmod = chmod;
         this.directoryFileTreeFactory = directoryFileTreeFactory;
         this.fileHasher = fileHasher;
     }
@@ -111,11 +110,19 @@ public class TarFileTree extends AbstractArchiveFileTree {
         File expandedDir = getExpandedDir();
         ReadableResourceInternal resource = this.resource.get();
         TarArchiveEntry entry;
+        LinksStrategy linksStrategy = visitor.getLinksStrategy();
+        linksStrategy = linksStrategy == null ? LinksStrategy.NONE : linksStrategy;
         while (!stopFlag.get() && (entry = (TarArchiveEntry) tar.getNextEntry()) != null) {
+            SymbolicLinkDetails linkDetails = null;
+            if (entry.isSymbolicLink()) {
+                linkDetails = new SymbolicLinkDetailsImpl(tar);
+            }
+            boolean preserveLink = linksStrategy.shouldBePreserved(linkDetails);
+            DetailsImpl details = new DetailsImpl(resource, expandedDir, entry, tar, stopFlag, linkDetails, preserveLink);
             if (entry.isDirectory()) {
-                visitor.visitDir(new DetailsImpl(resource, expandedDir, entry, tar, stopFlag));
+                visitor.visitDir(details);
             } else {
-                visitor.visitFile(new DetailsImpl(resource, expandedDir, entry, tar, stopFlag));
+                visitor.visitFile(details);
             }
         }
     }
@@ -188,12 +195,16 @@ public class TarFileTree extends AbstractArchiveFileTree {
         private final NoCloseTarArchiveInputStream tar;
         private final ReadableResourceInternal resource;
         private boolean read;
+        private final boolean preserveLink;
+        private final SymbolicLinkDetails linkDetails;
 
-        public DetailsImpl(ReadableResourceInternal resource, File expandedDir, TarArchiveEntry entry, NoCloseTarArchiveInputStream tar, AtomicBoolean stopFlag) {
+        public DetailsImpl(ReadableResourceInternal resource, File expandedDir, TarArchiveEntry entry, NoCloseTarArchiveInputStream tar, AtomicBoolean stopFlag, @Nullable SymbolicLinkDetails linkDetails, boolean preserveLink) {
             super(expandedDir, stopFlag);
             this.resource = resource;
             this.entry = entry;
             this.tar = tar;
+            this.preserveLink = preserveLink;
+            this.linkDetails = linkDetails;
         }
 
         @Override
@@ -204,7 +215,6 @@ public class TarFileTree extends AbstractArchiveFileTree {
         @Override
         public InputStream open() {
             if (read) {
-                getFile();
                 return GFileUtils.openInputStream(getFile());
             } else if (tar.getCurrentEntry() != entry) {
                 throw new UnsupportedOperationException(String.format("The contents of %s has already been read.", this));
@@ -222,7 +232,12 @@ public class TarFileTree extends AbstractArchiveFileTree {
         @Nullable
         @Override
         public SymbolicLinkDetails getSymbolicLinkDetails() {
-            return null; //FIXME
+            return linkDetails;
+        }
+
+        @Override
+        public boolean isSymbolicLink() {
+            return preserveLink && super.isSymbolicLink();
         }
 
         @Override
@@ -244,5 +259,36 @@ public class TarFileTree extends AbstractArchiveFileTree {
             public void close() {
             }
         }
+    }
+
+    private static final class SymbolicLinkDetailsImpl implements SymbolicLinkDetails {
+        private String target;
+        private final DetailsImpl.NoCloseTarArchiveInputStream tar;
+
+        SymbolicLinkDetailsImpl(DetailsImpl.NoCloseTarArchiveInputStream tar) {
+            this.tar = tar;
+        }
+
+        @Override
+        public boolean isAbsolute() {
+            return getTarget().startsWith("/");
+        }
+
+        @Override
+        public String getTarget() {
+            if (target == null) {
+                try {
+                    target = org.apache.commons.io.IOUtils.toString(tar, StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+            return target;
+        }
+
+        @Override
+        public boolean targetExists() {
+            return false;
+        } //FIXME: check properly
     }
 }

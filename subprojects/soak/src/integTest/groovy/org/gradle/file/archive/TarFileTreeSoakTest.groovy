@@ -34,7 +34,6 @@ import java.nio.file.StandardCopyOption
 
 import static org.gradle.api.internal.file.TestFiles.directoryFileTreeFactory
 import static org.gradle.api.internal.file.TestFiles.fileHasher
-import static org.gradle.api.internal.file.TestFiles.fileSystem
 import static org.gradle.util.internal.WrapUtil.toList
 
 class TarFileTreeSoakTest extends AbstractIntegrationSpec {
@@ -50,7 +49,7 @@ class TarFileTreeSoakTest extends AbstractIntegrationSpec {
 
         when:
         MaybeCompressedFileResource resource = new MaybeCompressedFileResource(new LocalResourceAdapter(TestFiles.fileRepository().localResource(tgz)))
-        TarFileTree tree = new TarFileTree(asProvider(tgz), asProvider(resource), fileSystem(), directoryFileTreeFactory(), fileHasher(), TestCaches.decompressionCache(temporaryFolder.createDir("cache-dir")))
+        TarFileTree tree = new TarFileTree(asProvider(tgz), asProvider(resource), directoryFileTreeFactory(), fileHasher(), TestCaches.decompressionCache(temporaryFolder.createDir("cache-dir")))
         def files = getFiles(tree)
 
         then:

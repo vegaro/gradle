@@ -39,6 +39,7 @@ abstract class AbstractCopySymlinksIntegrationSpec extends AbstractIntegrationSp
 
     def setup() {
         inputDirectory = createDir("input")
+        executer.withStacktraceEnabled()
     }
 
     def "symlinked files should be copied as #hint if preserveLinks=#preserveLinks"() {

@@ -35,7 +35,6 @@ import static org.gradle.api.file.FileVisitorUtil.assertVisits;
 import static org.gradle.api.file.FileVisitorUtil.assertVisitsPermissions;
 import static org.gradle.api.internal.file.TestFiles.directoryFileTreeFactory;
 import static org.gradle.api.internal.file.TestFiles.fileHasher;
-import static org.gradle.api.internal.file.TestFiles.fileSystem;
 import static org.gradle.api.tasks.AntBuilderAwareUtil.assertSetContainsForAllTypes;
 import static org.gradle.util.internal.WrapUtil.toList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -49,7 +48,6 @@ public class TarFileTreeTest extends AbstractArchiveFileTreeTest {
     private final TarFileTree tree = new TarFileTree(
             asProvider(archiveFile),
             asProvider(new MaybeCompressedFileResource(new LocalResourceAdapter(TestFiles.fileRepository().localResource(archiveFile)))),
-            fileSystem(),
             directoryFileTreeFactory(),
             fileHasher(),
             TestCaches.decompressionCache(tempDirProvider.getTestDirectory().createDir("cache-dir")));
@@ -87,7 +85,7 @@ public class TarFileTreeTest extends AbstractArchiveFileTreeTest {
         rootDir.tgzTo(tgz);
 
         MaybeCompressedFileResource resource = new MaybeCompressedFileResource(new LocalResourceAdapter(TestFiles.fileRepository().localResource(tgz)));
-        TarFileTree tree = new TarFileTree(asProvider(tgz), asProvider(resource), fileSystem(), directoryFileTreeFactory(), fileHasher(), TestCaches.decompressionCache(tempDirProvider.getTestDirectory().createDir("cache-dir")));
+        TarFileTree tree = new TarFileTree(asProvider(tgz), asProvider(resource), directoryFileTreeFactory(), fileHasher(), TestCaches.decompressionCache(tempDirProvider.getTestDirectory().createDir("cache-dir")));
 
         assertVisits(tree, toList("subdir/file1.txt", "subdir2/file2.txt"), toList("subdir", "subdir2"));
         assertSetContainsForAllTypes(tree, toList("subdir/file1.txt", "subdir2/file2.txt"));
@@ -102,7 +100,7 @@ public class TarFileTreeTest extends AbstractArchiveFileTreeTest {
         rootDir.tbzTo(tbz2);
 
         MaybeCompressedFileResource resource = new MaybeCompressedFileResource(new LocalResourceAdapter(TestFiles.fileRepository().localResource(tbz2)));
-        TarFileTree tree = new TarFileTree(asProvider(tbz2), asProvider(resource), fileSystem(), directoryFileTreeFactory(), fileHasher(), TestCaches.decompressionCache(tempDirProvider.getTestDirectory().createDir("cache-dir")));
+        TarFileTree tree = new TarFileTree(asProvider(tbz2), asProvider(resource), directoryFileTreeFactory(), fileHasher(), TestCaches.decompressionCache(tempDirProvider.getTestDirectory().createDir("cache-dir")));
 
         assertVisits(tree, toList("subdir/file1.txt", "subdir2/file2.txt"), toList("subdir", "subdir2"));
         assertSetContainsForAllTypes(tree, toList("subdir/file1.txt", "subdir2/file2.txt"));

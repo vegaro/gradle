@@ -144,7 +144,6 @@ public class ZipFileTree extends AbstractArchiveFileTree {
         private final ZipArchiveEntry entry;
         private final ZipFile zip;
         private final boolean preserveLink;
-
         private final SymbolicLinkDetails linkDetails;
 
         public DetailsImpl(File originalFile, File expandedDir, ZipArchiveEntry entry, ZipFile zip, AtomicBoolean stopFlag, @Nullable SymbolicLinkDetails linkDetails, boolean preserveLink) {
