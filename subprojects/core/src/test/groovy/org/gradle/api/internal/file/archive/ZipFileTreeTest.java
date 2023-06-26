@@ -29,7 +29,6 @@ import java.util.Map;
 import static org.gradle.api.file.FileVisitorUtil.assertVisitsPermissions;
 import static org.gradle.api.internal.file.TestFiles.directoryFileTreeFactory;
 import static org.gradle.api.internal.file.TestFiles.fileHasher;
-import static org.gradle.api.internal.file.TestFiles.fileSystem;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
@@ -38,7 +37,6 @@ public class ZipFileTreeTest extends AbstractArchiveFileTreeTest {
     private final TestFile archiveFile = tempDirProvider.getTestDirectory().file("test.zip");
     private final ZipFileTree tree = new ZipFileTree(
             TestUtil.providerFactory().provider(() -> archiveFile),
-            fileSystem(),
             directoryFileTreeFactory(),
             fileHasher(),
             TestCaches.decompressionCache(tempDirProvider.getTestDirectory().createDir("cache-dir")));

@@ -24,7 +24,6 @@ import org.hamcrest.Description
 import org.hamcrest.Matcher
 import spock.lang.Specification
 
-import static org.gradle.api.internal.file.TestFiles.fileSystem
 import static org.gradle.api.internal.file.copy.CopyActionExecuterUtil.visit
 
 class NormalizingCopyActionDecoratorTest extends Specification {
@@ -33,7 +32,7 @@ class NormalizingCopyActionDecoratorTest extends Specification {
         stream.process(delegateAction)
         return WorkResults.didWork(true)
     } as CopyAction
-    def decorator = new NormalizingCopyActionDecorator(delegate, fileSystem())
+    def decorator = new NormalizingCopyActionDecorator(delegate)
 
     def doesNotVisitADirectoryWhichHasBeenVisitedBefore() {
         given:

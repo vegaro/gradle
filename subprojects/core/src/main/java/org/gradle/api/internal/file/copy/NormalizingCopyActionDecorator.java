@@ -30,7 +30,6 @@ import org.gradle.api.file.SymbolicLinkDetails;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.CopyActionProcessingStreamAction;
 import org.gradle.api.tasks.WorkResult;
-import org.gradle.internal.file.Chmod;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -51,11 +50,9 @@ import java.util.Set;
 public class NormalizingCopyActionDecorator implements CopyAction {
 
     private final CopyAction delegate;
-    private final Chmod chmod;
 
-    public NormalizingCopyActionDecorator(CopyAction delegate, Chmod chmod) {
+    public NormalizingCopyActionDecorator(CopyAction delegate) {
         this.delegate = delegate;
-        this.chmod = chmod;
     }
 
     @Override
@@ -100,19 +97,19 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         FileCopyDetailsInternal dir;
         if (detailsForPath.isEmpty()) {
             // TODO - this is pretty nasty, look at avoiding using a time bomb stub here
-            dir = new StubbedFileCopyDetails(path, includeEmptyDirs);
+            dir = new ParentDirectoryStub(path, includeEmptyDirs);
         } else {
             dir = detailsForPath.get(0);
         }
         delegateAction.processFile(dir);
     }
 
-    private static class StubbedFileCopyDetails extends AbstractFileTreeElement implements FileCopyDetailsInternal {
+    private static class ParentDirectoryStub extends AbstractFileTreeElement implements FileCopyDetailsInternal {
         private final RelativePath path;
         private final boolean includeEmptyDirs;
         private final long lastModified = System.currentTimeMillis();
 
-        private StubbedFileCopyDetails(RelativePath path, boolean includeEmptyDirs) {
+        private ParentDirectoryStub(RelativePath path, boolean includeEmptyDirs) {
             this.path = path;
             this.includeEmptyDirs = includeEmptyDirs;
         }
@@ -129,13 +126,13 @@ public class NormalizingCopyActionDecorator implements CopyAction {
 
         @Override
         public File getFile() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         @SuppressWarnings("deprecation")
         public InputStream open() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
@@ -150,7 +147,7 @@ public class NormalizingCopyActionDecorator implements CopyAction {
 
         @Override
         public long getSize() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
@@ -161,113 +158,113 @@ public class NormalizingCopyActionDecorator implements CopyAction {
         @Nullable
         @Override
         public SymbolicLinkDetails getSymbolicLinkDetails() {
-            throw new UnsupportedOperationException();
+            return null; //this is not a symlink because it was traversed from below
         }
 
         @Override
         public void exclude() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void setName(String name) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void setPath(String path) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void setRelativePath(RelativePath path) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void setMode(int mode) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void permissions(Action<? super ConfigurableFilePermissions> configureAction) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void setPermissions(FilePermissions permissions) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void setDuplicatesStrategy(DuplicatesStrategy strategy) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public DuplicatesStrategy getDuplicatesStrategy() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public boolean isDefaultDuplicatesStrategy() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public String getSourceName() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public String getSourcePath() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public RelativePath getRelativeSourcePath() {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public void copyTo(OutputStream output) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         @SuppressWarnings("deprecation") //TODO: remove when the deprecated method is removed
         public boolean copyTo(File target) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public ContentFilterable filter(Map<String, ?> properties, Class<? extends FilterReader> filterType) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public ContentFilterable filter(Class<? extends FilterReader> filterType) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public ContentFilterable filter(Closure closure) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public ContentFilterable filter(Transformer<String, String> transformer) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public ContentFilterable expand(Map<String, ?> properties) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
 
         @Override
         public ContentFilterable expand(Map<String, ?> properties, Action<? super ExpandDetails> action) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("this is a stub");
         }
     }
 }
