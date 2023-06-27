@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 the original author or authors.
+ * Copyright 2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public interface JvmEcosystemAttributesDetails {
     /**
      * Configures the target JVM version. For producers of a library, it's in general
      * a better idea to rely on inference which will calculate the target JVM version
-     * lazily, for example calling {@link JvmEcosystemUtilities#useDefaultTargetPlatformInference(Configuration, TaskProvider)}.
+     * lazily, for example calling {@link JvmPluginServices#useDefaultTargetPlatformInference(Configuration, TaskProvider)}.
      * For consumers, it makes sense to specify a specific version of JVM they target.
      *
      * @param version the Java version
