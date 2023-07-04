@@ -37,6 +37,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.util.AttributeTestUtil
+import org.gradle.util.TestUtil
 
 import static org.gradle.api.attributes.Bundling.BUNDLING_ATTRIBUTE
 import static org.gradle.api.attributes.Bundling.EMBEDDED
@@ -67,9 +68,11 @@ class DefaultJvmPluginServicesTest extends AbstractJvmPluginServicesTest {
             beforeLocking(_) >> { args -> action[0] = args[0] }
             getAttributes() >> mutable
         }
+        def targetCompatibility = TestUtil.propertyFactory().property(String.class)
+        targetCompatibility.set('8')
         def javaCompileProvider = Stub(TaskProvider) {
                 get() >> Stub(JavaCompile) {
-                    getTargetCompatibility() >> '8'
+                    getTargetCompatibility() >> targetCompatibility
                 }
             }
         when:
