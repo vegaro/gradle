@@ -619,7 +619,7 @@
     "name": "platform-jvm",
     "path": "subprojects/platform-jvm",
     "unitTests": true,
-    "functionalTests": true,
+    "functionalTests": false,
     "crossVersionTests": false
   },
   {
