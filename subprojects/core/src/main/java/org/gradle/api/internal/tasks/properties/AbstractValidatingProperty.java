@@ -17,6 +17,7 @@
 package org.gradle.api.internal.tasks.properties;
 
 import com.google.common.base.Suppliers;
+import org.gradle.api.provider.HasConfigurableValue;
 import org.gradle.api.provider.Provider;
 import org.gradle.internal.properties.PropertyValue;
 import org.gradle.internal.reflect.problems.ValidationProblemId;
@@ -40,16 +41,18 @@ public abstract class AbstractValidatingProperty implements ValidatingProperty {
         this.validationAction = validationAction;
     }
 
-    public static void reportValueNotSet(String propertyName, TypeValidationContext context) {
+    public static void reportValueNotSet(String propertyName, TypeValidationContext context, boolean hasConfigurableValue) {
         context.visitPropertyProblem(problem -> {
             problem.withId(ValidationProblemId.VALUE_NOT_SET)
                 .reportAs(Severity.ERROR)
                 .forProperty(propertyName)
                 .withDescription("doesn't have a configured value")
                 .happensBecause("This property isn't marked as optional and no value has been configured")
-                .addPossibleSolution(() -> "Assign a value to '" + propertyName + "'")
-                .addPossibleSolution(() -> "Mark property '" + propertyName + "' as optional")
                 .documentedAt("validation_problems", "value_not_set");
+            if (hasConfigurableValue) {
+                problem.addPossibleSolution(() -> "Assign a value to '" + propertyName + "'");
+            }
+            problem.addPossibleSolution(() -> "Mark property '" + propertyName + "' as optional");
         });
     }
 
@@ -63,7 +66,7 @@ public abstract class AbstractValidatingProperty implements ValidatingProperty {
             validationAction.validate(propertyName, valueSupplier, context);
         } else {
             if (!optional) {
-                reportValueNotSet(propertyName, context);
+                reportValueNotSet(propertyName, context, hasConfigurableValue(unnested));
             }
         }
     }
@@ -74,6 +77,10 @@ public abstract class AbstractValidatingProperty implements ValidatingProperty {
             return ((Provider<?>) value).isPresent();
         }
         return value != null;
+    }
+
+    private static boolean hasConfigurableValue(@Nullable Object value) {
+        return value == null || HasConfigurableValue.class.isAssignableFrom(value.getClass());
     }
 
     @Override

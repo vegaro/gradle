@@ -310,7 +310,7 @@ public class DefaultTransform implements Transform {
                         Object preparedValue = InputParameterUtils.prepareInputParameterValue(value);
 
                         if (preparedValue == null && !optional) {
-                            reportValueNotSet(propertyName, validationContext);
+                            reportValueNotSet(propertyName, validationContext, true);
                         }
                         visitor.visitInputProperty(propertyName, () -> preparedValue);
                     } catch (Throwable e) {
