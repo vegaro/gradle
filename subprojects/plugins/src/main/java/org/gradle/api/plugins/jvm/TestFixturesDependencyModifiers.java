@@ -21,6 +21,7 @@ import org.gradle.api.artifacts.ExternalDependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.dsl.DependencyModifier;
+import org.gradle.api.internal.artifacts.dependencies.DefaultMinimalDependency;
 import org.gradle.api.tasks.Nested;
 import org.gradle.internal.Cast;
 import org.gradle.internal.component.external.model.DefaultImmutableCapability;
@@ -63,9 +64,17 @@ public interface TestFixturesDependencyModifiers {
          */
         @Override
         public <D extends ModuleDependency> D modify(D dependency) {
+            if (dependency instanceof DefaultMinimalDependency) {
+                // copy to enable mutability, safe unless `D = DefaultMinimalDependency`, which shouldn't be the case publicly.
+                @SuppressWarnings("unchecked")
+                D copy = (D) ((DefaultMinimalDependency) dependency).copy();
+                dependency = copy;
+            }
             if (dependency instanceof ExternalDependency) {
+                String group = dependency.getGroup();
+                String name = dependency.getName() + TestFixturesSupport.TEST_FIXTURES_CAPABILITY_APPENDIX;
                 dependency.capabilities(capabilities -> {
-                    capabilities.requireCapability(new DefaultImmutableCapability(dependency.getGroup(), dependency.getName() + TestFixturesSupport.TEST_FIXTURES_CAPABILITY_APPENDIX, null));
+                    capabilities.requireCapability(new DefaultImmutableCapability(group, name, null));
                 });
             } else if (dependency instanceof ProjectDependency) {
                 ProjectDependency projectDependency = Cast.uncheckedCast(dependency);
